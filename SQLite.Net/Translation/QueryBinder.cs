@@ -88,9 +88,9 @@ namespace SQLite.Net.Translation
 				List<MemberBinding> bindings = new List<MemberBinding>();
 				List<ColumnDeclaration> columns = new List<ColumnDeclaration>();
 
-				foreach (PropertyInfo pi in elementType.GetRuntimeProperties().Where(pi => pi.GetCustomAttribute<IgnoreAttribute>() == null))
+				foreach (PropertyInfo pi in elementType.GetRuntimeProperties().Where(pi => !pi.IsDefined(typeof(IgnoreAttribute))))
 				{
-					string columnName = pi.GetCustomAttribute<ColumnAttribute>()?.Name ?? pi.Name;
+					string columnName = Orm.GetColumnName(pi);
 					Type columnType = pi.PropertyType;
 
 					bindings.Add(Expression.Bind(pi, new ColumnExpression(columnType, selectAlias, columnName)));

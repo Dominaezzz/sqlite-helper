@@ -42,7 +42,7 @@ namespace SQLite.Net
 		    int? integerPrimaryKeyIndex = null;
 		    foreach (var property in typeof(T).GetRuntimeProperties())
 		    {
-			    if (property.GetCustomAttribute<IgnoreAttribute>() != null) continue;
+			    if (property.IsDefined(typeof(IgnoreAttribute))) continue;
 
 			    var primaryKey = property.GetCustomAttribute<PrimaryKeyAttribute>();
 			    if (primaryKey != null)
@@ -54,7 +54,7 @@ namespace SQLite.Net
 				    }
 			    }
 
-			    string name = property.GetCustomAttribute<ColumnAttribute>()?.Name ?? property.Name;
+			    string name = Orm.GetColumnName(property);
 
 			    sb.Append("[").Append(name).Append("]");
 			    sb.Append(", ");
@@ -127,7 +127,7 @@ namespace SQLite.Net
 		    PropertyInfo primaryKeyColumn = null;
 		    foreach (var property in typeof(T).GetRuntimeProperties())
 		    {
-			    if (property.GetCustomAttribute<IgnoreAttribute>() != null) continue;
+			    if (property.IsDefined(typeof(IgnoreAttribute))) continue;
 
 			    var primaryKey = property.GetCustomAttribute<PrimaryKeyAttribute>();
 			    if (primaryKey != null)

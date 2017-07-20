@@ -56,7 +56,6 @@ namespace SQLite.Net
 		    get => ExecuteScalar<long>("PRAGMA user_version");
 		    set => Execute($"PRAGMA user_version = {value}");
 	    }
-
 	    public bool ForeignKeysEnabled
 	    {
 			get => ExecuteScalar<bool>("PRAGMA foreign_keys");
@@ -176,13 +175,13 @@ namespace SQLite.Net
 					Expression.MemberInit(
 						Expression.New(typeof(T)),
 						typeof(T).GetRuntimeProperties()
-						.Where(pi => pi.GetCustomAttribute<IgnoreAttribute>() == null)
+						.Where(pi => pi.IsDefined(typeof(IgnoreAttribute)))
 						.Select(pi => Expression.Bind(
 							pi,
 							new ColumnExpression(
 								pi.PropertyType,
 								null,
-								pi.GetCustomAttribute<ColumnAttribute>()?.Name ?? pi.Name
+								Orm.GetColumnName(pi)
 							)
 						))
 					)
