@@ -2,6 +2,19 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard1.4</TargetFramework>
+    <PackageProjectUrl>https://github.com/Dominaezzz/sqlite-helper</PackageProjectUrl>
+    <PackageLicenseUrl>https://raw.githubusercontent.com/Dominaezzz/sqlite-helper/master/LICENSE.md</PackageLicenseUrl>
+    <Authors>Dominic Fischer</Authors>
+    <PackageTags>sqlite orm database linq queryable netstandard mobile</PackageTags>
+    <Description>SQLite-helper is an open source .NETStandard library for easy storage and access of data from SQLite databases.
+It uses SQLitePCLRaw to provide platform independent acces to sqlite.</Description>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageReleaseNotes>Initial Release.</PackageReleaseNotes>
+    <RepositoryUrl>https://github.com/Dominaezzz/sqlite-helper</RepositoryUrl>
+    <PackageId>sqlite-helper</PackageId>
+    <Company />
+    <Product />
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <ItemGroup>
