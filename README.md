@@ -5,6 +5,8 @@ SQLite-helper is an open source library built using .NETStandard to be cross-pla
 
 The main goal of the library was to support complex LINQ queries.
 
+Install [SQLite Helper](https://www.nuget.org/packages/sqlite-helper/) from Nuget.
+
 # Examples
 Classes can be defined to access tables or views in the database.
 Optionally they can be decorated with attributes to allow the library make smarter when working with the database.
