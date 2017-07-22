@@ -517,6 +517,10 @@ namespace SQLite.Net.Translation
 						}
 					case nameof(string.Trim):
 						return new FunctionExpression(typeof(string), "TRIM", Visit(call.Object));
+					case nameof(string.TrimStart):
+						return new FunctionExpression(typeof(string), "LTRIM", Visit(call.Object));
+					case nameof(string.TrimEnd):
+						return new FunctionExpression(typeof(string), "RTRIM", Visit(call.Object));
 				}
 			}
 			else if (call.Method.DeclaringType == typeof(DateTime))
