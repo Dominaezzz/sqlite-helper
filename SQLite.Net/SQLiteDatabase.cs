@@ -279,7 +279,7 @@ namespace SQLite.Net
 
 		public SQLiteQuery ExecuteQuery(string sql, params object[] bindings)
 	    {
-			SQLiteQuery query = new SQLiteQuery(_db, sql);
+			SQLiteQuery query = ExecuteQuery(sql);
 		    for (int i = 0; i < bindings.Length; i++)
 		    {
 			    query.Bind(i + 1, bindings[i]);

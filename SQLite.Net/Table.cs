@@ -212,10 +212,10 @@ namespace SQLite.Net
 			{
 				pred = projection.Source;
 			}
-//			var args = new List<object>();
-			var cmdText = $"DELETE FROM [{Name}] WHERE {QueryFormatter.Format(pred)};";
+			var args = new List<object>();
+			var cmdText = $"DELETE FROM [{Name}] WHERE {QueryFormatter.Format(pred, args)};";
 			
-			_db.Execute(cmdText);
+			_db.Execute(cmdText, args.ToArray());
 
 			return _db.Changes;
 		}

@@ -47,6 +47,7 @@ namespace Tests
 	    public void TestSetUp()
 	    {
 		    _db = new TestDb();
+		    _db.Logger = Console.Out;
 	    }
 
 		[TearDown]

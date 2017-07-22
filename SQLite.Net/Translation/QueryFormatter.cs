@@ -15,13 +15,17 @@ namespace SQLite.Net.Translation
 		internal const int IndentationWidth = 4;
 
 		private readonly StringBuilder _sb = new StringBuilder();
+		private readonly List<object> _args;
 		private int _depth;
 
-		private QueryFormatter() { }
-
-		internal static string Format(Expression expression)
+		private QueryFormatter(List<object> args)
 		{
-			QueryFormatter formatter = new QueryFormatter();
+			_args = args;
+		}
+
+		internal static string Format(Expression expression, List<object> args = null)
+		{
+			QueryFormatter formatter = new QueryFormatter(args);
 			formatter.Visit(expression);
 			return formatter._sb.ToString();
 		}
@@ -331,6 +335,20 @@ namespace SQLite.Net.Translation
 					break;
 			}
 			return c;
+		}
+
+		protected override Expression VisitHostParameter(HostParameterExpression hostParameter)
+		{
+			if (_args != null)
+			{
+				_args.Add(hostParameter.Value);
+				_sb.Append("?");
+			}
+			else
+			{
+				return Visit(Expression.Constant(hostParameter.Value, hostParameter.Type));
+			}
+			return base.VisitHostParameter(hostParameter);
 		}
 
 		protected override Expression VisitColumn(ColumnExpression column)

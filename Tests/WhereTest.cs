@@ -20,6 +20,8 @@ namespace Tests
 	    {
 		    _db = new SQLiteDb();
 		    _db.DataTable.Insert(Enumerable.Range(0, RowCount).Select(i => new Data { TextValue = $"Some Text {i}" }));
+
+		    _db.Logger = Console.Out;
 	    }
 
 		[OneTimeTearDown]

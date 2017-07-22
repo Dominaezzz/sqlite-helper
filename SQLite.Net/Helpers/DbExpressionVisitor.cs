@@ -39,6 +39,8 @@ namespace SQLite.Net.Helpers
 					return VisitFunction((FunctionExpression) exp);
 				case DbExpressionType.TypeChange:
 					return VisitTypeChange((TypeChangeExpression) exp);
+				case DbExpressionType.HostParameter:
+					return VisitHostParameter((HostParameterExpression) exp);
 				default:
 					return base.Visit(exp);
 			}
@@ -201,6 +203,11 @@ namespace SQLite.Net.Helpers
 				return new TypeChangeExpression(typeChange.Type, expr);
 			}
 			return typeChange;
+		}
+
+		protected virtual Expression VisitHostParameter(HostParameterExpression hostParameter)
+		{
+			return hostParameter;
 		}
 		
 		protected ReadOnlyCollection<ColumnDeclaration> VisitColumnDeclarations(ReadOnlyCollection<ColumnDeclaration> columns)

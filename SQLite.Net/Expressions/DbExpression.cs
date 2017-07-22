@@ -20,7 +20,8 @@ namespace SQLite.Net.Expressions
 		View,
 		RawQuery,
 		Function,
-		TypeChange
+		TypeChange,
+		HostParameter
 	}
 
 	internal class DbExpression : Expression

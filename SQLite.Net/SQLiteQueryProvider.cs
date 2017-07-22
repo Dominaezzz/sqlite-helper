@@ -71,6 +71,7 @@ namespace SQLite.Net
 		{
 			if (expression is ProjectionExpression projection) return projection;
 			expression = Evaluator.PartialEval(expression, CanBeEvaluatedLocally);
+			expression = ConstantEscaper.EscapeConstants(expression);
 			expression = QueryBinder.Bind(this, expression);
 			expression = OrderByRewriter.Rewrite(expression);
 			expression = RedundantSubqueryRemover.Remove(expression);
@@ -99,9 +100,10 @@ namespace SQLite.Net
 
 		private IEnumerable<T> ExecuteQuery<T>(ProjectionExpression projection)
 		{
-			string sql = QueryFormatter.Format(projection.Source);
+			List<object> args = new List<object>();
+			string sql = QueryFormatter.Format(projection.Source, args);
 
-			using (SQLiteQuery query = Database.ExecuteQuery(sql))
+			using (SQLiteQuery query = Database.ExecuteQuery(sql, args.ToArray()))
 			{
 				var projectorExpr = ProjectionBuilder.Build(projection.Projector, projection.Source.Alias, query);
 
