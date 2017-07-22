@@ -7,7 +7,11 @@ using SQLite.Net.Expressions;
 
 namespace SQLite.Net
 {
-    public class View<T> : Query<T>
+	/// <summary>
+	/// A class representing View in an SQLite Database.
+	/// </summary>
+	/// <typeparam name="T">A model class to represent the view.</typeparam>
+	public class View<T> : Query<T>
 	{
 		public string Name { get; }
 

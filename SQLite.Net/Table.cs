@@ -12,6 +12,10 @@ using SQLite.Net.Translation;
 
 namespace SQLite.Net
 {
+	/// <summary>
+	/// Class representing a Table in an SQLite Database.
+	/// </summary>
+	/// <typeparam name="T">A model class to represent the table.</typeparam>
     public class Table<T> : Query<T>
     {
 	    private readonly SQLiteDatabase _db;
