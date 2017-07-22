@@ -9,12 +9,13 @@
     <Description>SQLite-helper is an open source .NETStandard library for easy storage and access of data from SQLite databases.
 It uses SQLitePCLRaw to provide platform independent acces to sqlite.</Description>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <PackageReleaseNotes>Initial Release.</PackageReleaseNotes>
+    <PackageReleaseNotes>Library now binds all constants used in LINQ queries instead of using them directly in text.</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/Dominaezzz/sqlite-helper</RepositoryUrl>
     <PackageId>sqlite-helper</PackageId>
     <Company />
     <Product />
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
