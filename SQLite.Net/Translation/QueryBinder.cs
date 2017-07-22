@@ -48,15 +48,6 @@ namespace SQLite.Net.Translation
 			return $"t{_aliasCount++}";
 		}
 
-		private static string GetExistingAlias(Expression source)
-		{
-			if (source is AliasedExpression aliasedExpression)
-			{
-				return aliasedExpression.Alias;
-			}
-			throw new InvalidOperationException($"Invalid source node type ‘{source.NodeType}'");
-		}
-
 		private static ProjectedColumns ProjectColumns(Expression expression, string newAlias, params string[] existingAliases)
 		{
 			return ColumnProjector.ProjectColumns(expression, newAlias, existingAliases);
@@ -700,7 +691,7 @@ namespace SQLite.Net.Translation
 
 			Expression expression = Visit(selector.Body);
 			string alias = GetNewAlias();
-			ProjectedColumns pc = ProjectColumns(expression, alias, GetExistingAlias(projection.Source));
+			ProjectedColumns pc = ProjectColumns(expression, alias, projection.Source.Alias);
 			return new ProjectionExpression(
 				new SelectExpression(alias, pc.Columns, projection.Source),
 				pc.Projector
@@ -714,7 +705,7 @@ namespace SQLite.Net.Translation
 
 			string alias = GetNewAlias();
 			Expression where = Visit(predicate.Body);
-			ProjectedColumns pc = ProjectColumns(projection.Projector, alias, GetExistingAlias(projection.Source));
+			ProjectedColumns pc = ProjectColumns(projection.Projector, alias, projection.Source.Alias);
 			return new ProjectionExpression(
 				new SelectExpression(alias, pc.Columns, projection.Source, where),
 				pc.Projector
