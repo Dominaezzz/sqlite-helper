@@ -80,7 +80,7 @@ namespace SQLite.Net.Translation
 								return new AggregateExpression(
 									innerAggExpr.Type,
 									innerAggExpr.AggregateType,
-									new ColumnExpression(innerAggExpr.Argument.Type, table.Alias, column.Name),
+									new ColumnExpression(column.Type, table.Alias, column.Name),
 									innerAggExpr.IsDistict
 								);
 							}

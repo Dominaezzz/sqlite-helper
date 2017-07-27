@@ -968,9 +968,11 @@ namespace SQLite.Net.Translation
 				argExpr = projection.Projector;
 			}
 
+			bool isDistinct = (projection.Source as SelectExpression)?.IsDistinct ?? false;
+
 			SelectExpression select = new SelectExpression(
 				GetNewAlias(),
-				new[] { new ColumnDeclaration("", new AggregateExpression(returnType, aggType, argExpr)) },
+				new[] { new ColumnDeclaration("", new AggregateExpression(returnType, aggType, argExpr, isDistinct)) },
 				projection.Source
 			);
 			if (isRoot)
