@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard1.3</TargetFramework>
+    <TargetFramework>netstandard1.4</TargetFramework>
     <PackageProjectUrl>https://github.com/Dominaezzz/sqlite-helper</PackageProjectUrl>
     <PackageLicenseUrl>https://raw.githubusercontent.com/Dominaezzz/sqlite-helper/master/LICENSE.md</PackageLicenseUrl>
     <Authors>Dominic Fischer</Authors>
