@@ -9,7 +9,7 @@ using SQLite.Net.Translation;
 
 namespace SQLite.Net
 {
-	public class SQLiteQueryProvider : IQueryProvider
+	internal class SQLiteQueryProvider : IQueryProvider
 	{
 		private static readonly MethodInfo ExecuteQueryMethod = typeof(SQLiteQueryProvider).GetTypeInfo()
 			.DeclaredMethods.Single(mi => mi.Name == nameof(ExecuteQuery));
@@ -95,7 +95,8 @@ namespace SQLite.Net
 			{
 				return false;
 			}
-			return expression.NodeType != ExpressionType.Parameter && expression.NodeType != ExpressionType.Lambda;
+			return expression.NodeType != ExpressionType.Parameter && expression.NodeType != ExpressionType.Lambda &&
+				expression.NodeType != ExpressionType.New;
 		}
 
 		private IEnumerable<T> ExecuteQuery<T>(ProjectionExpression projection)
