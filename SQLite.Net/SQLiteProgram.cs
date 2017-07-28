@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Text;
+using SQLite.Net.Attributes;
 using SQLitePCL;
 
 namespace SQLite.Net
@@ -80,7 +82,18 @@ namespace SQLite.Net
 				    Bind(index, Convert.ToString(value));
 					break;
 			    case TypeCode.Object:
-				    switch (value)
+				    if (value.GetType().GetTypeInfo().IsEnum)
+				    {
+					    if (value.GetType().GetTypeInfo().IsDefined(typeof(StoreAsTextAttribute)))
+					    {
+							Bind(index, value.ToString());
+					    }
+					    else
+					    {
+							Bind(index, Array.IndexOf(Enum.GetValues(value.GetType()), value));
+					    }
+				    }
+					switch (value)
 				    {
 						case byte[] blob:
 							Bind(index, blob);

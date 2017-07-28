@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using SQLite.Net.Attributes;
 
 namespace SQLite.Net.Builders
 {
@@ -74,6 +75,10 @@ namespace SQLite.Net.Builders
 		    else if (columnType == typeof(byte[]))
 		    {
 			    type = DataType.Blob;
+		    }
+			else if (columnType.GetTypeInfo().IsEnum)
+		    {
+			    type = columnType.GetTypeInfo().IsDefined(typeof(StoreAsTextAttribute)) ? DataType.Text : DataType.Integer;
 		    }
 		    else
 		    {

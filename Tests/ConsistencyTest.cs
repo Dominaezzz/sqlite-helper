@@ -186,10 +186,42 @@ namespace Tests
 		}
 
 	    [Test]
-		[NUnit.Framework.Ignore("Has not been implemented.")]
 	    public void TestEnum()
 	    {
-		    
+		    SimpleTest<RegularEnum>(RegularEnum.Value1);
+		    SimpleTest<RegularEnum>(RegularEnum.Value2);
+		    SimpleTest<RegularEnum>(RegularEnum.Value3);
+		    SimpleTest<RegularEnum?>(RegularEnum.Value3);
+		    SimpleTest<RegularEnum?>(null);
+
+		    SimpleTest<IrregularEnum>(IrregularEnum.Value1);
+		    SimpleTest<IrregularEnum>(IrregularEnum.Value2);
+		    SimpleTest<IrregularEnum>(IrregularEnum.Value3);
+		    SimpleTest<IrregularEnum?>(IrregularEnum.Value3);
+		    SimpleTest<IrregularEnum?>(null);
+
+		    SimpleTest<TextEnum>(TextEnum.Table);
+		    SimpleTest<TextEnum>(TextEnum.View);
+		    SimpleTest<TextEnum>(TextEnum.Trigger);
+		    SimpleTest<TextEnum>(TextEnum.Index);
+			SimpleTest<TextEnum?>(TextEnum.View);
+		    SimpleTest<TextEnum?>(null);
+		}
+
+	    public enum RegularEnum
+	    {
+		    Value1, Value2, Value3
+		}
+
+	    public enum IrregularEnum
+	    {
+		    Value1 = 3, Value2 = 1, Value3 = 9
+	    }
+
+		[StoreAsText]
+	    public enum TextEnum
+	    {
+		    Table, View, Trigger, Index
 	    }
 	}
 }

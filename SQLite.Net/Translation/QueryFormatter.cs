@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using SQLite.Net.Attributes;
 using SQLite.Net.Expressions;
 using SQLite.Net.Helpers;
 
@@ -313,6 +314,17 @@ namespace SQLite.Net.Translation
 					_sb.AppendFormat("{0:0.0###########}", c.Value);
 					break;
 				case TypeCode.Object:
+					if (c.Value.GetType().GetTypeInfo().IsEnum)
+					{
+						if (c.Value.GetType().GetTypeInfo().IsDefined(typeof(StoreAsTextAttribute)))
+						{
+							_sb.Append('\'').Append(c.Value).Append('\'');
+						}
+						else
+						{
+							_sb.Append(Array.IndexOf(Enum.GetValues(c.Value.GetType()), c.Value));
+						}
+					}
 					switch (c.Value)
 					{
 						case TimeSpan timeSpan:

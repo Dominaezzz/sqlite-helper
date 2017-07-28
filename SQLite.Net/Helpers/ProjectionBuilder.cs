@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using SQLite.Net.Attributes;
 using SQLite.Net.Expressions;
 
 namespace SQLite.Net.Helpers
@@ -20,7 +21,7 @@ namespace SQLite.Net.Helpers
 		public abstract string GetText(int index);
 		public abstract byte[] GetBlob(int index);
 		public abstract bool IsNull(int index);
-		public abstract IEnumerable<E> ExecuteSubQuery<E>(LambdaExpression query);
+		public abstract IEnumerable<T> ExecuteSubQuery<T>(LambdaExpression query);
 	}
 
 	/// <summary>
@@ -65,7 +66,7 @@ namespace SQLite.Net.Helpers
 
 				var clrType = Nullable.GetUnderlyingType(column.Type) ?? column.Type;
 
-				Expression result = null;
+				Expression result;
 
 				if (Orm.IntegralTypes.Contains(clrType))
 				{
@@ -124,20 +125,26 @@ namespace SQLite.Net.Helpers
 				}
 				else if (clrType.GetTypeInfo().IsEnum)
 				{
-					var methodCall = Expression.Call(_row, MiGetValue, index);
-					result = Expression.Convert(
-						Expression.Condition(
-							Expression.TypeIs(methodCall, typeof(string)),
-							Expression.Call(
-								typeof(Enum), nameof(Enum.Parse), null,
-								Expression.Constant(column.Type),
-								Expression.Call(_row, MiGetText, index),
-								Expression.Constant(true)
-							),
-							methodCall
+					Expression fromText = Expression.Convert(
+						Expression.Call(
+							typeof(Enum), nameof(Enum.Parse), null,
+							Expression.Constant(clrType),
+							Expression.Call(_row, MiGetText, index),
+							Expression.Constant(true)
 						),
-						column.Type
+						clrType
 					);
+					if (clrType.GetTypeInfo().IsDefined(typeof(StoreAsTextAttribute)))
+					{
+						result = fromText;
+					}
+					else
+					{
+						var methodCall = Expression.Convert(Expression.Call(_row, MiGetInt, index), clrType);
+						result = Expression.Condition(
+							Expression.TypeIs(methodCall, typeof(string)), fromText, methodCall
+						);
+					}
 				}
 				else if (clrType == typeof(object))
 				{
