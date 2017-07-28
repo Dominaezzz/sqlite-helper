@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using SQLite.Net;
 using SQLite.Net.Attributes;
@@ -23,12 +24,168 @@ namespace Tests
 	    public ChinookDatabase() : base("chinook.db")
 	    {
 	    }
+
+	    private void Migrate()
+	    {
+		    CreateTable("Album", c => new
+		    {
+			    AlbumId = c.Column<int>(primaryKey:true),
+				Title = c.Column<string>(nullable:false),
+				ArtistId = c.Column<int>()
+		    },
+			t => new
+			{
+				FK = t.ForeignKey(a => a.ArtistId, "Artist", "ArtistId")
+			});
+
+			CreateTable("Artist", c => new
+			{
+				ArtistId = c.Column<int>(primaryKey: true),
+				Name = c.Column<string>(nullable: false)
+			});
+
+			CreateTable("Customer", c => new
+			{
+				CustomerId = c.Column<int>(primaryKey:true),
+			    FirstName = c.Column<string>(nullable:false),
+				LastName = c.Column<string>(nullable: false),
+				Company = c.Column<string>(),
+				Address = c.Column<string>(),
+				City = c.Column<string>(),
+				State = c.Column<string>(),
+				Country = c.Column<string>(),
+				PostalCode = c.Column<string>(),
+				Phone = c.Column<string>(),
+				Fax = c.Column<string>(),
+				Email = c.Column<string>(nullable:false),
+				SupportRepId = c.Column<int?>()
+			},
+			t => new
+			{
+				FK = t.ForeignKey(c => c.SupportRepId, "Employee", "EmployeeId")
+			});
+
+		    CreateTable("Employee", c => new
+			{
+				EmployeeId = c.Column<int>(primaryKey: true),
+				FirstName = c.Column<string>(nullable: false),
+				LastName = c.Column<string>(nullable: false),
+				Title = c.Column<string>(),
+				ReportsTo = c.Column<int>(),
+				BirthDate = c.Column<DateTime?>(),
+				HireDate = c.Column<DateTime?>(),
+				Address = c.Column<string>(),
+				City = c.Column<string>(),
+				State = c.Column<string>(),
+				Country = c.Column<string>(),
+				PostalCode = c.Column<string>(),
+				Phone = c.Column<string>(),
+				Fax = c.Column<string>(),
+				Email = c.Column<string>(nullable: false)
+			},
+			t => new
+			{
+				FK = t.ForeignKey(c => c.ReportsTo, "Employee", "EmployeeId")
+			});
+
+		    CreateTable("Genre", c => new
+		    {
+			    GenreId = c.Column<int>(primaryKey: true),
+			    Name = c.Column<string>()
+		    });
+
+		    CreateTable("Invoice", c => new
+			{
+				InvoiceId = c.Column<int>(primaryKey: true),
+				CustomerId = c.Column<int>(),
+				InvoiceDate = c.Column<DateTime>(),
+				BillingAddress = c.Column<string>(),
+				BillingCity = c.Column<string>(),
+				BillingState = c.Column<string>(),
+				BillingCountry = c.Column<string>(),
+				BillingPostalCode = c.Column<string>(),
+				Total = c.Column<decimal>()
+			},
+			t => new
+			{
+				FK = t.ForeignKey(c => c.CustomerId, "Customer", "CustomerId")
+			});
+
+			CreateTable("InvoiceLine", c => new
+			{
+				InvoiceLineId = c.Column<int>(primaryKey:true),
+				InvoiceId = c.Column<int>(),
+				TrackId = c.Column<int>(),
+				UnitPrice = c.Column<decimal>(),
+				Quantity = c.Column<int>()
+			},
+			t => new
+			{
+				FK_Invoice = t.ForeignKey(i => i.InvoiceId, "Invoice", "InvoiceId"),
+				FK_Track = t.ForeignKey(i => i.TrackId, "Track", "TrackId")
+			});
+
+		    CreateTable("MediaType", c => new
+		    {
+			    MediaTypeId = c.Column<int>(primaryKey: true),
+			    Name = c.Column<string>()
+		    });
+
+		    CreateTable("Playlist", c => new
+		    {
+			    PlaylistId = c.Column<int>(primaryKey: true),
+			    Name = c.Column<string>()
+		    });
+
+		    CreateTable("PlaylistTrack", c => new
+		    {
+			    PlaylistId = c.Column<int>(),
+			    TrackId = c.Column<int>()
+		    },
+			t => new
+			{
+				FK_Playlist = t.ForeignKey(pt => pt.PlaylistId, "Playlist", "PlaylistId"),
+				FK_Track = t.ForeignKey(pt => pt.TrackId, "Track", "TrackId")
+			});
+
+			CreateTable("Track", c => new
+			{
+				TrackId = c.Column<int>(primaryKey:true),
+				Name = c.Column<string>(nullable:false),
+				AlbumId = c.Column<int?>(),
+				MediaTypeId = c.Column<int>(),
+				GenreId = c.Column<int?>(),
+				Composer = c.Column<string>(),
+				Milliseconds = c.Column<int>(),
+				Bytes = c.Column<int?>(),
+				UnitPrice = c.Column<decimal>()
+			},
+			t => new
+			{
+				FK_Album = t.ForeignKey(c => c.AlbumId, "Album", "AlbumId"),
+				FK_MediaType = t.ForeignKey(c => c.MediaTypeId, "MediaType", "MediaTypeId"),
+				FK_Genre = t.ForeignKey(c => c.GenreId, "Genre", "GenreId")
+			});
+
+			CreateView("AlbumView", Albums.GroupJoin(Tracks, album => album.AlbumId, track => track.AlbumId, (album, tracks) => new
+			{
+				AlbumId = album.AlbumId,
+				Title = album.Title,
+				ArtistId = album.ArtistId,
+				TotalPrice = tracks.Sum(t => t.UnitPrice),
+				TrackCount = tracks.Count()
+			}));
+
+			CreateIndex<Track>("Track_AlbumId", false, t => t.AlbumId);
+
+		    Albums.Insert(new Album {ArtistId = 2, Title = "Something"});
+	    }
     }
 
 	[Table("Album")]
 	public class Album
 	{
-		[PrimaryKey, NotNull]
+		[PrimaryKey]
 		public int AlbumId { get; set; }
 
 		[NotNull]
@@ -41,7 +198,7 @@ namespace Tests
 	[Table("Artist")]
 	public class Artist
 	{
-		[PrimaryKey, NotNull]
+		[PrimaryKey]
 		public int ArtistId { get; set; }
 		public string Name { get; set; }
 	}
@@ -49,7 +206,7 @@ namespace Tests
 	[Table("Customer")]
 	public class Customer
 	{
-		[PrimaryKey, NotNull]
+		[PrimaryKey]
 		public int CustomerId { get; set; }
 		[NotNull]
 		public string FirstName { get; set; }
@@ -81,7 +238,7 @@ namespace Tests
 		public string FirstName { get; set; }
 		public string Title { get; set; }
 		[ForeignKey("Employee", "EmployeeId")]
-		public string ReportsTo { get; set; }
+		public int ReportsTo { get; set; }
 		public DateTime? BirthDate { get; set; }
 		public DateTime? HireDate { get; set; }
 		public string Address { get; set; }
@@ -145,7 +302,7 @@ namespace Tests
 	{
 		[PrimaryKey]
 		public int PlaylistId { get; set; }
-		public int Name { get; set; }
+		public string Name { get; set; }
 	}
 
 	[Table("PlaylistTrack")]
