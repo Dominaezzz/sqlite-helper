@@ -103,6 +103,7 @@ namespace SQLite.Net
 		{
 			List<object> args = new List<object>();
 			string sql = QueryFormatter.Format(projection.Source, args);
+			Database.Log?.Invoke(sql);
 
 			using (SQLiteQuery query = Database.ExecuteQuery(sql, args.ToArray()))
 			{

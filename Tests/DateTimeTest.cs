@@ -17,7 +17,7 @@ namespace Tests
 			_db = new SQLiteDb<DateTime>();
 			_db.DataTable.Insert(new Data<DateTime> { Value = _testDate });
 
-			_db.Logger = Console.Out;
+			_db.Log = Console.WriteLine;
 		}
 
 		[OneTimeTearDown]

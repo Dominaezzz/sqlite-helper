@@ -16,7 +16,7 @@ namespace Tests
 		{
 			_db = new ChinookDatabase();
 
-			_db.Logger = Console.Out;
+			_db.Log = Console.WriteLine;
 		}
 
 		[OneTimeTearDown]

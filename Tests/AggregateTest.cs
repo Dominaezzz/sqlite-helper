@@ -73,7 +73,6 @@ namespace Tests
 		[Category("Distinct")]
 		public void TestAggregateDistinct()
 		{
-			_db.Logger = Console.Out;
 			double expected = _db.ExecuteScalar<double>("SELECT AVG(DISTINCT Id / 2) FROM DataTable");
 			double actual = _db.DataTable.Select(d => d.Id / 2).Distinct().Average();
 			Assert.AreEqual(expected, actual);

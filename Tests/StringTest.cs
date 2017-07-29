@@ -20,7 +20,7 @@ namespace Tests
 			_db = new SQLiteDb<string>();
 			_db.DataTable.Insert(new Data<string> { Value = TestString });
 
-			_db.Logger = Console.Out;
+			_db.Log = Console.WriteLine;
 		}
 
 		[OneTimeTearDown]
