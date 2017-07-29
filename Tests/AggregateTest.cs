@@ -70,6 +70,16 @@ namespace Tests
 		}
 
 		[Test]
+		[Category("Distinct")]
+		public void TestAggregateDistinct()
+		{
+			_db.Logger = Console.Out;
+			double expected = _db.ExecuteScalar<double>("SELECT AVG(DISTINCT Id / 2) FROM DataTable");
+			double actual = _db.DataTable.Select(d => d.Id / 2).Distinct().Average();
+			Assert.AreEqual(expected, actual);
+		}
+
+		[Test]
 		[Category("Where")]
 		[TestCase(5, 25)]
 		[TestCase(45, 75)]
