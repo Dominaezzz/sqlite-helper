@@ -61,19 +61,15 @@ namespace SQLite.Net.Translation
 
 		private static bool IsNameMapProjection(SelectExpression select)
 		{
-			if (select.From is TableExpression) return false;
-			SelectExpression fromSelect = select.From as SelectExpression;
-			if (fromSelect == null || select.Columns.Count != fromSelect.Columns.Count)
-				return false;
-			// test that all columns in 'select' are refering to columns in the same position
-			// in 'fromSelect'.
-			for (int i = 0, n = select.Columns.Count; i < n; i++)
+			if (select.From is SelectExpression fromSelect && select.Columns.Count == fromSelect.Columns.Count)
 			{
-				ColumnExpression col = select.Columns[i].Expression as ColumnExpression;
-				if (col == null || col.Name != fromSelect.Columns[i].Name)
-					return false;
+				// test that all columns in 'select' are refering to columns in the same position
+				// in 'fromSelect'.
+				return select.Columns.Select(c => c.Expression as ColumnExpression)
+					.Zip(fromSelect.Columns, (colExpr, col) => colExpr != null && colExpr.Name == col.Name)
+					.All(equal => equal);
 			}
-			return true;
+			return false;
 		}
 
 		private class RedundantSubqueryGatherer : DbExpressionVisitor
@@ -91,7 +87,7 @@ namespace SQLite.Net.Translation
 
 			private static bool IsRedudantSubquery(SelectExpression select)
 			{
-				return (select.From is SelectExpression || select.From is TableExpression)
+				return select.From is AliasedExpression
 				       && (ProjectionIsSimple(select) || IsNameMapProjection(select))
 					   && !select.IsDistinct
 				       && select.Where == null
@@ -228,9 +224,6 @@ namespace SQLite.Net.Translation
 				if (selHasGroupBy && frmHasGroupBy) return false;
 				// cannot move forward order-by if outer has group-by
 				if (frmHasOrderBy && (selHasGroupBy || selHasAggregates || select.IsDistinct)) return false;
-				// cannot move forward group-by if outer has where clause
-//				if (frmHasGroupBy /*&& (select.Where != null)*/) // need to assert projection is the same in order to move group-by forward
-//					return false;
 				// cannot move forward a take if outer has take or skip or distinct
 				if (fromSelect.Limit != null && (select.Limit != null || select.Offset != null || select.IsDistinct || selHasAggregates || selHasGroupBy || selHasJoin)) return false;
 				// cannot move forward a skip if outer has skip or distinct
