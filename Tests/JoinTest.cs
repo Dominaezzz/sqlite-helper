@@ -27,8 +27,8 @@ namespace Tests
 		[Test]
 		public void TestJoin()
 		{
-			const string querySQL =
-				"SELECT Album.AlbumId, Track.TrackId FROM Track JOIN Album ON Album.AlbumId IS Track.AlbumId";
+			const string querySQL = "SELECT Album.AlbumId, Track.TrackId " +
+									"FROM Track JOIN Album ON Album.AlbumId IS Track.AlbumId";
 			using (var query = _db.ExecuteQuery(querySQL))
 			{
 				var result = _db.Albums.Join(_db.Tracks, a => a.AlbumId, t => t.AlbumId, (album, track) => new
@@ -49,11 +49,10 @@ namespace Tests
 		[Test]
 		public void TestJoinNested()
 		{
-			const string querySQL =
-				"SELECT Artist.ArtistId, Album.AlbumId, Track.TrackId " +
-				"FROM Artist " +
-				"JOIN Album ON Album.ArtistId IS Artist.ArtistId " +
-				"JOIN Track ON Track.AlbumId IS Album.AlbumId";
+			const string querySQL = "SELECT Artist.ArtistId, Album.AlbumId, Track.TrackId " +
+									"FROM Artist " +
+									"JOIN Album ON Album.ArtistId IS Artist.ArtistId " +
+									"JOIN Track ON Track.AlbumId IS Album.AlbumId";
 
 			using (var query = _db.ExecuteQuery(querySQL))
 			{
@@ -68,6 +67,41 @@ namespace Tests
 					Assert.AreEqual(query.GetInt(0), item.ArtistId);
 					Assert.AreEqual(query.GetInt(1), item.AlbumId);
 					Assert.AreEqual(query.GetInt(2), item.TrackId);
+				}
+				Assert.IsFalse(query.Step());
+			}
+		}
+
+		[Test]
+		[Category("GroupBy")]
+		[Category("Aggregate")]
+		public void TestJoinThenGroupBy()
+		{
+			const string querySQL =
+				"SELECT Artist.ArtistId, MIN(Artist.Name), COUNT(*) " +
+				"FROM Artist " +
+				"JOIN Album ON Album.ArtistId IS Artist.ArtistId " +
+				"GROUP BY Artist.ArtistId";
+
+			using (var query = _db.ExecuteQuery(querySQL))
+			{
+				var result = _db.Artists.Join(_db.Albums, artist => artist.ArtistId, album => album.ArtistId, (artist, album) => new
+					{
+						Artist = artist,
+						Album = album
+					})
+					.GroupBy(p => p.Artist.ArtistId, (id, enumerable) => new
+					{
+						ArtistId = id,
+						ArtistName = enumerable.Min(aa => aa.Artist.Name),
+						AlbumCount = enumerable.Count()
+					});
+				foreach (var item in result)
+				{
+					Assert.IsTrue(query.Step());
+					Assert.AreEqual(query.GetInt(0), item.ArtistId);
+					Assert.AreEqual(query.GetText(1), item.ArtistName);
+					Assert.AreEqual(query.GetInt(2), item.AlbumCount);
 				}
 				Assert.IsFalse(query.Step());
 			}
@@ -116,7 +150,7 @@ namespace Tests
 		public void TestGroupJoinWithAggregate()
 		{
 			const string querySQL =
-				"SELECT Artist.ArtistId, COUNT(*) " +
+				"SELECT Artist.ArtistId, Artist.Name, COUNT(*) " +
 				"FROM Artist " +
 				"JOIN Album ON Album.ArtistId IS Artist.ArtistId " +
 				"GROUP BY Artist.ArtistId";
@@ -126,13 +160,15 @@ namespace Tests
 				var result = _db.Artists.GroupJoin(_db.Albums, artist => artist.ArtistId, album => album.ArtistId, (artist, albums) => new
 				{
 					ArtistId = artist.ArtistId,
+					ArtistName = artist.Name,
 					AlbumCount = albums.Count()
 				});
 				foreach (var item in result)
 				{
 					Assert.IsTrue(query.Step());
 					Assert.AreEqual(query.GetInt(0), item.ArtistId);
-					Assert.AreEqual(query.GetInt(1), item.AlbumCount);
+					Assert.AreEqual(query.GetText(1), item.ArtistName);
+					Assert.AreEqual(query.GetInt(2), item.AlbumCount);
 				}
 				Assert.IsFalse(query.Step());
 			}

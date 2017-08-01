@@ -20,6 +20,7 @@ namespace Tests
 
 		public SQLiteDb()
 		{
+			Log = Console.WriteLine;
 			if (UserVersion == 0)
 			{
 				CreateTable("DataTable", c => new

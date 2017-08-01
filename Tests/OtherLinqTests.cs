@@ -237,8 +237,6 @@ namespace Tests
 	    {
 		    using (var db = new SQLiteDb<string>())
 		    {
-			    db.Log = Console.WriteLine;
-
 			    db.DataTable.Insert(new Data<string>() { Value = "Random Text" });
 			    db.DataTable.Insert(new Data<string>() { Value = "Random Text 2" });
 
