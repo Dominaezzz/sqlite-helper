@@ -42,17 +42,17 @@ namespace SQLite.Net.Helpers
 		private static readonly MethodInfo MiExecuteSubQuery = typeof(ProjectionRow).GetRuntimeMethod("ExecuteSubQuery", new []{ typeof(LambdaExpression) });
 		private readonly ParameterExpression _row = Expression.Parameter(typeof(ProjectionRow), "row");
 		private readonly string _rowAlias;
-		private readonly SQLiteQuery _query;
+		private readonly Func<string, int> _getColumnIndex;
 
-		private ProjectionBuilder(string rowAlias, SQLiteQuery query)
+		private ProjectionBuilder(string rowAlias, Func<string, int> getColumnIndex)
 		{
 			_rowAlias = rowAlias;
-			_query = query;
+			_getColumnIndex = getColumnIndex;
 		}
 
-		internal static LambdaExpression Build(Expression expression, string alias, SQLiteQuery query)
+		internal static LambdaExpression Build(Expression expression, string alias, Func<string, int> getColumnIndex)
 		{
-			ProjectionBuilder builder = new ProjectionBuilder(alias, query);
+			ProjectionBuilder builder = new ProjectionBuilder(alias, getColumnIndex);
 			Expression body = builder.Visit(expression);
 			return Expression.Lambda(body, builder._row);
 		}
@@ -61,7 +61,7 @@ namespace SQLite.Net.Helpers
 		{
 			if (column.Alias == _rowAlias)
 			{
-				int iOrdinal = string.IsNullOrEmpty(column.Name) ? 0 : _query.GetColumnIndex(column.Name);
+				int iOrdinal = _getColumnIndex(column.Name);
 				Expression index = Expression.Constant(iOrdinal);
 
 				var clrType = Nullable.GetUnderlyingType(column.Type) ?? column.Type;

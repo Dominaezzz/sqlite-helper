@@ -12,14 +12,15 @@ It uses SQLitePCLRaw to provide platform independent access to sqlite.
 
 !!WARNING!! Library is currently in beta, breaking changes might occur!!</Description>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <PackageReleaseNotes>Library now supports enums.
-Now logs generated queries.</PackageReleaseNotes>
+    <PackageReleaseNotes>Support GroupBy aggregates on Joins and Views in addition to just Tables.
+Fixed bug with Contains.
+Fixed bug with Take/ElementAt/ElementAtOrDefault.</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/Dominaezzz/sqlite-helper</RepositoryUrl>
     <PackageId>sqlite-helper</PackageId>
     <Company />
     <Product>SQLite Helper</Product>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <Version>1.2.0</Version>
+    <Version>1.2.2</Version>
     <Copyright>Copyright © 2017 Dominic Fischer</Copyright>
   </PropertyGroup>
 

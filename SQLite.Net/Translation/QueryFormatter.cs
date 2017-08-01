@@ -455,7 +455,11 @@ namespace SQLite.Net.Translation
 			}
 			if (select.Offset != null)
 			{
-				if (select.Limit == null) _sb.Append("LIMIT -1");
+				if (select.Limit == null)
+				{
+					AppendNewLine(Indentation.Same);
+					_sb.Append("LIMIT -1");
+				}
 				_sb.Append(" OFFSET ");
 				Visit(select.Offset);
 			}
@@ -592,7 +596,8 @@ namespace SQLite.Net.Translation
 
 		protected override Expression VisitIn(InExpression inExpression)
 		{
-			_sb.Append("(");
+			Visit(inExpression.Expression);
+			_sb.Append(" IN (");
 			AppendNewLine(Indentation.Inner);
 			if (inExpression.Query != null)
 			{

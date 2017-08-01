@@ -23,6 +23,7 @@ namespace Tests
 
 	    public ChinookDatabase() : base("chinook.db")
 	    {
+		    Log = Console.WriteLine;
 	    }
 
 	    private void Migrate()

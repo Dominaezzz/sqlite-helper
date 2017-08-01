@@ -18,8 +18,6 @@ namespace Tests
 		{
 			_db = new SQLiteDb<TimeSpan>();
 			_db.DataTable.Insert(new Data<TimeSpan> { Value = _testTimeSpan });
-
-			_db.Log = Console.WriteLine;
 		}
 
 		[OneTimeTearDown]

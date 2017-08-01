@@ -12,7 +12,7 @@ namespace SQLite.Net.Translation
     internal class AggregateSimplifier : DbExpressionVisitor
     {
 	    private ReadOnlyCollection<Expression> _currentGroupBys = null;
-	    private List<TableExpression> _currentTables = null;
+	    private Expression _currentFrom = null;
 
 		private AggregateSimplifier() { }
 
@@ -24,72 +24,99 @@ namespace SQLite.Net.Translation
 	    protected override Expression VisitSelect(SelectExpression select)
 	    {
 		    var saveGroupBys = _currentGroupBys;
-		    var saveTables = _currentTables;
+		    var saveFrom = _currentFrom;
 			{
 				if (select.GroupBy != null && select.GroupBy.Count > 0)
 				{
 					_currentGroupBys = select.GroupBy;
+					_currentFrom = select.From;
 				}
 				else
 				{
 					_currentGroupBys = null;
+					_currentFrom = null;
 				}
-				_currentTables = null;
 				select = (SelectExpression)base.VisitSelect(select);
 			}
-		    _currentTables = saveTables;
+		    _currentFrom = saveFrom;
 		    _currentGroupBys = saveGroupBys;
 		    return select;
-	    }
-
-	    protected override Expression VisitTable(TableExpression table)
-	    {
-		    if (_currentGroupBys != null)
-		    {
-			    if (_currentTables == null) _currentTables = new List<TableExpression>();
-				_currentTables.Add(table);
-		    }
-		    return base.VisitTable(table);
 	    }
 
 	    protected override Expression VisitScalar(ScalarExpression scalar)
 	    {
 		    scalar = (ScalarExpression) base.VisitScalar(scalar);
-		    if (_currentGroupBys != null && _currentTables != null)
+		    if (_currentGroupBys != null && _currentFrom != null)
 		    {
-			    if (scalar.Query is SelectExpression innerSelect && innerSelect.From is TableExpression innerTable)
+			    if (scalar.Query is SelectExpression innerSelect && SourcesAreEqual(_currentFrom, innerSelect.From))
 			    {
-				    TableExpression table = _currentTables.Find(t => t.Name == innerTable.Name);
-				    if (table != null)
+				    var groupedColumns = GroupedColumnGatherer.Gather(innerSelect.Where);
+				    if (groupedColumns?.SequenceEqual(_currentGroupBys) ?? false)
 				    {
-					    var groupedColumns = GroupedColumnGatherer.Gather(innerSelect.Where);
-					    if (groupedColumns?.SequenceEqual(_currentGroupBys) ?? false)
+					    var innerAggExpr = (AggregateExpression)innerSelect.Columns[0].Expression;
+					    if (innerAggExpr.Argument == null)
 					    {
-						    var innerAggExpr = (AggregateExpression)innerSelect.Columns[0].Expression;
-						    if (innerAggExpr.Argument == null)
-						    {
-								return new AggregateExpression(
-									innerAggExpr.Type,
-									innerAggExpr.AggregateType,
-									null,
-									innerAggExpr.IsDistict
-								);
-							}
-						    else if(innerAggExpr.Argument is ColumnExpression column)
-						    {
-								return new AggregateExpression(
-									innerAggExpr.Type,
-									innerAggExpr.AggregateType,
-									new ColumnExpression(column.Type, table.Alias, column.Name),
-									innerAggExpr.IsDistict
-								);
-							}
+						    return new AggregateExpression(
+							    innerAggExpr.Type,
+							    innerAggExpr.AggregateType,
+							    null,
+							    innerAggExpr.IsDistict
+						    );
+					    }
+					    else if (innerAggExpr.Argument is ColumnExpression column)
+					    {
+						    var source = GetSource(_currentFrom, innerSelect.From, column.Alias);
+						    return new AggregateExpression(
+							    innerAggExpr.Type,
+							    innerAggExpr.AggregateType,
+							    new ColumnExpression(column.Type, source.Alias, column.Name),
+							    innerAggExpr.IsDistict
+						    );
 					    }
 				    }
-			    }
+				}
 			}
 			return scalar;
 	    }
+
+	    private static bool SourcesAreEqual(Expression left, Expression right)
+	    {
+		    if (left == right) return true;
+		    if (left == null || right == null) return false;
+		    if (left.NodeType != right.NodeType) return false;
+
+		    switch (left.NodeType)
+		    {
+				case (ExpressionType)DbExpressionType.Table:
+					return ((TableExpression) left).Name == ((TableExpression) right).Name;
+			    case (ExpressionType)DbExpressionType.View:
+				    return ((ViewExpression) left).Name == ((ViewExpression) right).Name;
+			    case (ExpressionType)DbExpressionType.Join:
+				    JoinExpression leftJoin = (JoinExpression) left;
+				    JoinExpression rightJoin = (JoinExpression) right;
+				    return SourcesAreEqual(leftJoin.Left, rightJoin.Left) && SourcesAreEqual(leftJoin.Right, rightJoin.Right);
+				default:
+					return false;
+			}
+	    }
+
+	    private static AliasedExpression GetSource(Expression main, Expression sub, string columnAlias)
+	    {
+			switch (sub)
+			{
+				case AliasedExpression aliasedExpression:
+					if (aliasedExpression.Alias == columnAlias)
+					{
+						return (AliasedExpression) main;
+					}
+					return null;
+				case JoinExpression subJoin:
+					JoinExpression mainJoin = (JoinExpression)main;
+					return GetSource(mainJoin.Left, subJoin.Left, columnAlias) ?? GetSource(mainJoin.Right, subJoin.Right, columnAlias);
+				default:
+					return null;
+			}
+		}
 
 	    private class GroupedColumnGatherer : DbExpressionVisitor
 	    {
