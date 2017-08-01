@@ -596,7 +596,8 @@ namespace SQLite.Net.Translation
 
 		protected override Expression VisitIn(InExpression inExpression)
 		{
-			_sb.Append("(");
+			Visit(inExpression.Expression);
+			_sb.Append(" IN (");
 			AppendNewLine(Indentation.Inner);
 			if (inExpression.Query != null)
 			{
