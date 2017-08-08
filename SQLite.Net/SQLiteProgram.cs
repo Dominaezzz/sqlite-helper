@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using SQLite.Net.Attributes;
+using SQLite.Net.Exceptions;
 using SQLitePCL;
 
 namespace SQLite.Net
@@ -12,7 +13,9 @@ namespace SQLite.Net
     {
 	    protected readonly sqlite3_stmt _stmt;
 
+	    internal sqlite3 Db => raw.sqlite3_db_handle(_stmt);
 	    public string Text => raw.sqlite3_sql(_stmt);
+	    public int ParameterCount => raw.sqlite3_bind_parameter_count(_stmt);
 
 	    internal SQLiteProgram(sqlite3 db, string sql)
 	    {
@@ -22,7 +25,17 @@ namespace SQLite.Net
 			}
 		}
 
-	    public void BindNull(int index)
+	    public int GetParameterIndex(string name)
+	    {
+		    return raw.sqlite3_bind_parameter_index(_stmt, name);
+		}
+
+	    public string GetParameterName(int index)
+	    {
+		    return raw.sqlite3_bind_parameter_name(_stmt, index);
+	    }
+
+		public void BindNull(int index)
 	    {
 		    raw.sqlite3_bind_null(_stmt, index);
 	    }
@@ -121,21 +134,6 @@ namespace SQLite.Net
 		    raw.sqlite3_clear_bindings(_stmt);
 	    }
 
-	    protected bool Step()
-	    {
-		    switch (raw.sqlite3_step(_stmt))
-		    {
-				case raw.SQLITE_ROW:
-					return true;
-				case raw.SQLITE_DONE:
-					return false;
-				default:
-					throw new SQLiteException(
-						$"Could not execute SQL statement. MSG: {raw.sqlite3_errmsg(raw.sqlite3_db_handle(_stmt))}"
-					);
-		    }
-		}
-
 	    public void Reset()
 	    {
 		    if (raw.sqlite3_reset(_stmt) != raw.SQLITE_OK) throw new SQLiteException("Could not reset statement");
@@ -145,7 +143,7 @@ namespace SQLite.Net
 		{
 			if (raw.sqlite3_finalize(_stmt) != raw.SQLITE_OK)
 			{
-				throw new SQLiteException($"Could not finalize statement: {raw.sqlite3_errmsg(raw.sqlite3_db_handle(_stmt))}");
+				throw new SQLiteException($"Could not finalize statement: {raw.sqlite3_errmsg(Db)}");
 			}
 		}
     }

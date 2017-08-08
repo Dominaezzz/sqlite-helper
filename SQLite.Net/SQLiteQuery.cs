@@ -19,11 +19,18 @@ namespace SQLite.Net
 		    _columns = Enumerable.Range(0, ColumnCount).ToDictionary(GetColumnName);
 	    }
 
-		public new bool Step()
+		public bool Step()
 		{
-			if (!base.Step()) return false;
-			Position++;
-			return true;
+			switch (raw.sqlite3_step(_stmt))
+			{
+				case raw.SQLITE_ROW:
+					Position++;
+					return true;
+				case raw.SQLITE_DONE:
+					return false;
+				default:
+					throw new SQLiteException(raw.sqlite3_errmsg(Db));
+			}
 		}
 
 	    public object this[int columnIndex]
