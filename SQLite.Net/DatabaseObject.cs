@@ -35,5 +35,10 @@ namespace SQLite.Net
 		/// </summary>
 		[Column("sql")]
 		public string SQL { get; set; }
+
+	    public override string ToString()
+	    {
+		    return $"{Type.ToUpper()}[{Name}] ON {TableName}";
+	    }
     }
 }
