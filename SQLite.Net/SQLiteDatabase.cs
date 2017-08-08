@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using SQLite.Net.Attributes;
 using SQLite.Net.Builders;
+using SQLite.Net.Exceptions;
 using SQLite.Net.Expressions;
 using SQLite.Net.Helpers;
 using SQLite.Net.Translation;
@@ -14,13 +15,6 @@ using SQLitePCL;
 
 namespace SQLite.Net
 {
-	public class SQLiteException : Exception
-	{
-		public SQLiteException() { }
-
-		public SQLiteException(string message) : base(message) { }
-	}
-
 	public enum TransactionType
 	{
 		Deferred, Immediate, Exclusive
@@ -60,7 +54,10 @@ namespace SQLite.Net
 		/// </summary>
 	    public bool IsInTransaction => TransactionDepth > 0;
 
-	    public long LastInsertRowId => raw.sqlite3_last_insert_rowid(_db);
+		/// <summary>
+		/// <returns>The ROWID of the last row insert from the database connection which invoked the function.</returns>
+		/// </summary>
+		public long LastInsertRowId => raw.sqlite3_last_insert_rowid(_db);
 		/// <summary>
 		/// <returns>
 		/// The number of database rows that were changed or inserted or deleted
@@ -131,7 +128,7 @@ namespace SQLite.Net
 		/// SQLiteMaster.Where(o => o.Type == "table").OrderBy(o => o.Name).Select(o => o.Name)
 		/// </code>
 		/// </example>
-		public Table<DatabaseObject> SQLiteMaster { get; set; }
+		public Table<DatabaseObject> SQLiteMaster { get; }
 		/// <summary>
 		/// Temporary tables do not appear in the SQLITE_MASTER table.
 		/// Temporary tables and their indices and triggers occur in another special table named SQLITE_TEMP_MASTER.
@@ -140,7 +137,7 @@ namespace SQLite.Net
 		/// except that it is only visible to the application that created the temporary tables.
 		/// </para>
 		/// </summary>
-		public Table<DatabaseObject> SQLiteTempMaster { get; set; }
+		public Table<DatabaseObject> SQLiteTempMaster { get; }
 
 		/// <summary>
 		/// Creates a database connection to the file at the path specified or creates an in-memory database if path is null.
