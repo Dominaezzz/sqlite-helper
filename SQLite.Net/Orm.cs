@@ -9,13 +9,13 @@ namespace SQLite.Net
     internal class Orm
 	{
 		public static readonly DateTime Unixepoch = new DateTime(1970, 1, 1);
-		public static readonly string DateFormat = "yyyy-MM-dd";
-		public static readonly string TimeFormat = "HH:mm:ss.fff";
-		public static readonly string DateTimeFormat = $"{DateFormat}T{TimeFormat}";
-		public static readonly string DateTimeOffsetFormat = $"{DateTimeFormat} zzzz";
-		public static readonly string DateSqlFormat = "%Y-%m-%d";
-		public static readonly string TimeSqlFormat = "%H:%M:%f";
-		public static readonly string DateTimeSqlFormat = $"{DateSqlFormat}T{TimeSqlFormat}";
+		public const string DateFormat = "yyyy-MM-dd";
+		public const string TimeFormat = "HH:mm:ss.fff";
+		public const string DateTimeFormat = DateFormat + " " + TimeFormat;
+		public const string DateTimeOffsetFormat = DateTimeFormat + " zzzz";
+		public const string DateSqlFormat = "%Y-%m-%d";
+		public const string TimeSqlFormat = "%H:%M:%f";
+		public const string DateTimeSqlFormat = DateSqlFormat + " " + TimeSqlFormat;
 
 		public static readonly HashSet<Type> AllTypes = new HashSet<Type>
 		{

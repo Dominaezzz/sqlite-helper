@@ -79,6 +79,156 @@ namespace SQLite.Net.Translation
 							Visit(args[i]);
 						}
 						return call;
+					case nameof(string.Contains):
+						Visit(call.Object);
+						_sb.Append(" GLOB ('*' || ");
+						Visit(call.Arguments[0]);
+						_sb.Append(" || '*')");
+						return call;
+					case nameof(string.StartsWith):
+						Visit(call.Object);
+						_sb.Append(" GLOB (");
+						Visit(call.Arguments[0]);
+						_sb.Append(" || '*')");
+						return call;
+					case nameof(string.EndsWith):
+						Visit(call.Object);
+						_sb.Append(" GLOB ('*' || ");
+						Visit(call.Arguments[0]);
+						_sb.Append(")");
+						return call;
+					case nameof(string.ToLower):
+						_sb.Append("LOWER(");
+						Visit(call.Object);
+						_sb.Append(")");
+						return call;
+					case nameof(string.ToUpper):
+						_sb.Append("UPPER(");
+						Visit(call.Object);
+						_sb.Append(")");
+						return call;
+					case nameof(string.Replace):
+						_sb.Append("REPLACE(");
+						Visit(call.Object);
+						_sb.Append(", ");
+						Visit(call.Arguments[0]);
+						_sb.Append(", ");
+						Visit(call.Arguments[1]);
+						_sb.Append(")");
+						return call;
+					case nameof(string.IsNullOrEmpty):
+						_sb.Append("(IFNULL(");
+						Visit(call.Arguments[0]);
+						_sb.Append(", '') == '')");
+						return call;
+					case nameof(string.Substring):
+						_sb.Append("SUBSTR(");
+						Visit(call.Object);
+						_sb.Append(", ");
+						Visit(call.Arguments[0]);
+						_sb.Append(" + 1");
+						if (call.Arguments.Count == 2)
+						{
+							_sb.Append(", ");
+							Visit(call.Arguments[1]);
+						}
+						_sb.Append(")");
+						return call;
+					case nameof(string.Remove):
+						if (call.Arguments.Count == 1)
+						{
+							_sb.Append("SUBSTR(");
+							Visit(call.Object);
+							_sb.Append(", 1, ");
+							Visit(call.Arguments[0]);
+							_sb.Append(")");
+							return call;
+						}
+						else
+						{
+							_sb.Append("(SUBSTR(");
+							Visit(call.Object);
+							_sb.Append(", 1, ");
+							Visit(call.Arguments[0]);
+							_sb.Append(") || SUBSTR(");
+							Visit(call.Object);
+							_sb.Append(", (");
+							Visit(call.Arguments[0]);
+							_sb.Append(" + ");
+							Visit(call.Arguments[1]);
+							_sb.Append(")))");
+							return call;
+						}
+					case nameof(string.Trim):
+						_sb.Append("TRIM(");
+						Visit(call.Object);
+						_sb.Append(")");
+						return call;
+					case nameof(string.TrimStart):
+						_sb.Append("LTRIM(");
+						Visit(call.Object);
+						_sb.Append(")");
+						return call;
+					case nameof(string.TrimEnd):
+						_sb.Append("RTRIM(");
+						Visit(call.Object);
+						_sb.Append(")");
+						return call;
+				}
+			}
+			else if (call.Method.DeclaringType == typeof(Math))
+			{
+				switch (call.Method.Name)
+				{
+					case nameof(Math.Abs):
+					case nameof(Math.Acos):
+					case nameof(Math.Asin):
+					case nameof(Math.Atan):
+					case nameof(Math.Cos):
+					case nameof(Math.Exp):
+					case nameof(Math.Log10):
+					case nameof(Math.Sin):
+					case nameof(Math.Tan):
+					case nameof(Math.Sqrt):
+					case nameof(Math.Sign):
+						_sb.Append(call.Method.Name.ToUpper());
+						_sb.Append("(");
+						Visit(call.Arguments[0]);
+						_sb.Append(")");
+						return call;
+					case nameof(Math.Atan2):
+					case nameof(Math.Pow):
+						_sb.Append(call.Method.Name.ToUpper());
+						_sb.Append("(");
+						Visit(call.Arguments[0]);
+						_sb.Append(", ");
+						Visit(call.Arguments[1]);
+						_sb.Append(")");
+						return call;
+					case nameof(Math.Log):
+						if (call.Arguments.Count == 1)
+						{
+							goto case nameof(Math.Log10);
+						}
+						break;
+					case nameof(Math.Round):
+						if (call.Arguments.Count == 1)
+						{
+							_sb.Append("ROUND(");
+							Visit(call.Arguments[0]);
+							_sb.Append(")");
+							return call;
+						}
+						else if (call.Arguments.Count == 2 && call.Arguments[1].Type == typeof(int))
+						{
+							_sb.Append("ROUND(");
+							Visit(call.Arguments[0]);
+							_sb.Append(", ");
+							Visit(call.Arguments[1]);
+							_sb.Append(")");
+							return call;
+						}
+						break;
 				}
 			}
 			else if (call.Method.DeclaringType == typeof(decimal))
@@ -142,6 +292,145 @@ namespace SQLite.Net.Translation
 						break;
 				}
 			}
+			else if (call.Method.DeclaringType == typeof(DateTime))
+			{
+				Expression ApplyModifier(string type)
+				{
+					_sb.Append("STRFTIME('" + Orm.DateTimeSqlFormat + "', ");
+					Visit(call.Object);
+					_sb.Append(", ");
+					Visit(call.Arguments[0]);
+					_sb.Append(" || ' ").Append(type).Append("')");
+					return call;
+				}
+
+				switch (call.Method.Name)
+				{
+					case nameof(DateTime.AddYears):
+						return ApplyModifier("years");
+					case nameof(DateTime.AddMonths):
+						return ApplyModifier("months");
+					case nameof(DateTime.AddDays):
+						return ApplyModifier("days");
+					case nameof(DateTime.AddHours):
+						return ApplyModifier("hours");
+					case nameof(DateTime.AddMinutes):
+						return ApplyModifier("minutes");
+					case nameof(DateTime.AddSeconds):
+						return ApplyModifier("seconds");
+					case nameof(DateTime.AddMilliseconds):
+						_sb.Append("STRFTIME('" + Orm.DateTimeSqlFormat + "', ");
+						Visit(call.Object);
+						_sb.Append(", (");
+						Visit(call.Arguments[0]);
+						_sb.Append(" / 1000.0) || ' seconds')");
+						return call;
+					case nameof(DateTime.AddTicks):
+						_sb.Append("STRFTIME('" + Orm.DateTimeSqlFormat + "', ");
+						Visit(call.Object);
+						_sb.Append(", (");
+						Visit(call.Arguments[0]);
+						_sb.AppendFormat(" / {0:F1}) || ' seconds')", TimeSpan.TicksPerSecond);
+						return call;
+					case nameof(DateTime.Add):
+						_sb.Append("STRFTIME('" + Orm.DateTimeSqlFormat + "', ");
+						Visit(call.Object);
+						_sb.Append(", (");
+						Visit(call.Arguments[0]);
+						_sb.AppendFormat(" / {0:F1}) || ' seconds')", TimeSpan.TicksPerSecond);
+						return call;
+					case nameof(DateTime.Subtract):
+						if (call.Arguments[1].Type == typeof(DateTime))
+						{
+							_sb.Append("ROUND(");
+							{
+								_sb.Append("(JULIANDAY(");
+								Visit(call.Arguments[0]);
+								_sb.Append(") - JULIANDAY(");
+								Visit(call.Arguments[1]);
+								_sb.Append("))");
+							}
+							_sb.AppendFormat(" * {0:D})", TimeSpan.TicksPerDay);
+							return call;
+						}
+						else if (call.Arguments[1].Type == typeof(TimeSpan))
+						{
+							_sb.Append("STRFTIME('" + Orm.DateTimeSqlFormat + "', ");
+							Visit(call.Object);
+							_sb.Append(", -(");
+							Visit(call.Arguments[0]);
+							_sb.AppendFormat(" / {0:F1}) || ' seconds')", TimeSpan.TicksPerSecond);
+							return call;
+						}
+						break;
+				}
+			}
+			else if (call.Method.DeclaringType == typeof(TimeSpan))
+			{
+				switch (call.Method.Name)
+				{
+					case nameof(TimeSpan.FromDays):
+						_sb.Append("ROUND(");
+						Visit(call.Arguments[0]);
+						_sb.Append(" * ");
+						_sb.Append(TimeSpan.TicksPerDay);
+						_sb.Append(")");
+						return call;
+					case nameof(TimeSpan.FromHours):
+						_sb.Append("ROUND(");
+						Visit(call.Arguments[0]);
+						_sb.Append(" * ");
+						_sb.Append(TimeSpan.TicksPerHour);
+						_sb.Append(")");
+						return call;
+					case nameof(TimeSpan.FromMinutes):
+						_sb.Append("ROUND(");
+						Visit(call.Arguments[0]);
+						_sb.Append(" * ");
+						_sb.Append(TimeSpan.TicksPerMinute);
+						_sb.Append(")");
+						return call;
+					case nameof(TimeSpan.FromSeconds):
+						_sb.Append("ROUND(");
+						Visit(call.Arguments[0]);
+						_sb.Append(" * ");
+						_sb.Append(TimeSpan.TicksPerSecond);
+						_sb.Append(")");
+						return call;
+					case nameof(TimeSpan.FromMilliseconds):
+						_sb.Append("ROUND(");
+						Visit(call.Arguments[0]);
+						_sb.Append(" * ");
+						_sb.Append(TimeSpan.TicksPerMillisecond);
+						_sb.Append(")");
+						return call;
+					case nameof(TimeSpan.FromTicks):
+						return Visit(call.Arguments[0]);
+					case nameof(TimeSpan.Add):
+						_sb.Append("(");
+						Visit(call.Object);
+						_sb.Append(" + ");
+						Visit(call.Arguments[0]);
+						_sb.Append(")");
+						return call;
+					case nameof(TimeSpan.Subtract):
+						_sb.Append("(");
+						Visit(call.Object);
+						_sb.Append(" - ");
+						Visit(call.Arguments[0]);
+						_sb.Append(")");
+						return call;
+					case nameof(TimeSpan.Negate):
+						_sb.Append("-");
+						Visit(call.Object);
+						return call;
+					case nameof(TimeSpan.Duration):
+						_sb.Append("ABS(");
+						Visit(call.Object);
+						_sb.Append(")");
+						return call;
+				}
+			}
 			if (call.Method.Name == nameof(ToString))
 			{
 				// no-op
@@ -149,6 +438,158 @@ namespace SQLite.Net.Translation
 				return call;
 			}
 			throw new NotSupportedException($"The method ‘{call.Method.Name}’ is not supported");
+		}
+
+		protected override Expression VisitMember(MemberExpression m)
+		{
+			if (m.Member.DeclaringType == typeof(string))
+			{
+				switch (m.Member.Name)
+				{
+					case nameof(string.Length):
+						_sb.Append("LENGTH(");
+						Visit(m.Expression);
+						_sb.Append(")");
+						return m;
+				}
+			}
+			else if (m.Member.DeclaringType == typeof(DateTime) || m.Member.DeclaringType == typeof(DateTimeOffset))
+			{
+				switch (m.Member.Name)
+				{
+					case nameof(DateTime.Year):
+						_sb.Append("STRFTIME('%Y', ");
+						Visit(m.Expression);
+						_sb.Append(")");
+						return m;
+					case nameof(DateTime.Month):
+						_sb.Append("STRFTIME('%m', ");
+						Visit(m.Expression);
+						_sb.Append(")");
+						return m;
+					case nameof(DateTime.Day):
+						_sb.Append("STRFTIME('%d', ");
+						Visit(m.Expression);
+						_sb.Append(")");
+						return m;
+					case nameof(DateTime.Hour):
+						_sb.Append("STRFTIME('%H', ");
+						Visit(m.Expression);
+						_sb.Append(")");
+						return m;
+					case nameof(DateTime.Minute):
+						_sb.Append("STRFTIME('%M', ");
+						Visit(m.Expression);
+						_sb.Append(")");
+						return m;
+					case nameof(DateTime.Second):
+						_sb.Append("STRFTIME('%S', ");
+						Visit(m.Expression);
+						_sb.Append(")");
+						return m;
+					case nameof(DateTime.Millisecond):
+						_sb.Append("CAST(SUBSTR(STRFTIME('%f', ");
+						Visit(m.Expression);
+						_sb.Append("), 4) AS INTEGER)");
+						return m;
+					case nameof(DateTime.DayOfYear):
+						_sb.Append("STRFTIME('%j', ");
+						Visit(m.Expression);
+						_sb.Append(")");
+						return m;
+					case nameof(DateTime.DayOfWeek):
+						_sb.Append("STRFTIME('%w', ");
+						Visit(m.Expression);
+						_sb.Append(")");
+						return m;
+					case nameof(DateTime.Date):
+						_sb.Append("STRFTIME('" + Orm.DateTimeSqlFormat + "', ");
+						Visit(m.Expression);
+						_sb.Append(", 'start of day')");
+						return m;
+					case nameof(DateTime.TimeOfDay):
+						_sb.Append("(ROUND(");
+						{
+							_sb.Append("(JULIANDAY(");
+							Visit(m.Expression);
+							_sb.Append(") - JULIANDAY(");
+							Visit(m.Expression);
+							_sb.Append(", 'start of day'))");
+						}
+						_sb.AppendFormat(
+							" * {0:D}) * {1:D})",
+							TimeSpan.TicksPerDay / TimeSpan.TicksPerMillisecond,
+							TimeSpan.TicksPerMillisecond
+						);
+						return m;
+					case nameof(DateTime.Today):
+						_sb.Append("STRFTIME('" + Orm.DateTimeSqlFormat + "', 'now', 'start of day')");
+						return m;
+					case nameof(DateTime.Now):
+						_sb.Append("STRFTIME('" + Orm.DateTimeSqlFormat + "', 'now')");
+						return m;
+				}
+			}
+			else if (m.Member.DeclaringType == typeof(TimeSpan))
+			{
+				switch (m.Member.Name)
+				{
+					case nameof(TimeSpan.TotalDays):
+						_sb.Append("(");
+						Visit(m.Expression);
+						_sb.AppendFormat(" / {0:F1})", TimeSpan.TicksPerDay);
+						return m;
+					case nameof(TimeSpan.TotalHours):
+						_sb.Append("(");
+						Visit(m.Expression);
+						_sb.AppendFormat(" / {0:F1})", TimeSpan.TicksPerHour);
+						return m;
+					case nameof(TimeSpan.TotalMinutes):
+						_sb.Append("(");
+						Visit(m.Expression);
+						_sb.AppendFormat(" / {0:F1})", TimeSpan.TicksPerMinute);
+						return m;
+					case nameof(TimeSpan.TotalSeconds):
+						_sb.Append("(");
+						Visit(m.Expression);
+						_sb.AppendFormat(" / {0:F1})", TimeSpan.TicksPerSecond);
+						return m;
+					case nameof(TimeSpan.TotalMilliseconds):
+						_sb.Append("(");
+						Visit(m.Expression);
+						_sb.AppendFormat(" / {0:F1})", TimeSpan.TicksPerMillisecond);
+						return m;
+					case nameof(TimeSpan.Ticks):
+						Visit(m.Expression);
+						return m;
+					case nameof(TimeSpan.Days):
+						_sb.Append("(");
+						Visit(m.Expression);
+						_sb.AppendFormat(" / {0:D})", TimeSpan.TicksPerDay);
+						return m;
+					case nameof(TimeSpan.Hours):
+						_sb.Append("((");
+						Visit(m.Expression);
+						_sb.AppendFormat(" / {0:D}) % 24)", TimeSpan.TicksPerHour);
+						return m;
+					case nameof(TimeSpan.Minutes):
+						_sb.Append("((");
+						Visit(m.Expression);
+						_sb.AppendFormat(" / {0:D}) % 60)", TimeSpan.TicksPerMinute);
+						return m;
+					case nameof(TimeSpan.Seconds):
+						_sb.Append("((");
+						Visit(m.Expression);
+						_sb.AppendFormat(" / {0:D}) % 60)", TimeSpan.TicksPerSecond);
+						return m;
+					case nameof(TimeSpan.Milliseconds):
+						_sb.Append("((");
+						Visit(m.Expression);
+						_sb.AppendFormat(" / {0:D}) % 1000)", TimeSpan.TicksPerMillisecond);
+						return m;
+				}
+			}
+			return base.VisitMember(m);
 		}
 
 		protected override Expression VisitUnary(UnaryExpression u)
