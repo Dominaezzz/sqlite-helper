@@ -37,32 +37,82 @@ namespace SQLite.Net
 
 		public void BindNull(int index)
 	    {
-		    raw.sqlite3_bind_null(_stmt, index);
+		    switch (raw.sqlite3_bind_null(_stmt, index))
+		    {
+				case raw.SQLITE_OK:
+					break;
+				case raw.SQLITE_RANGE:
+					throw new ArgumentOutOfRangeException(nameof(index), index, "");
+				default:
+					throw new SQLiteException(raw.sqlite3_errmsg(Db));
+		    }
 	    }
 
 	    public void Bind(int index, int value)
 	    {
-		    raw.sqlite3_bind_int(_stmt, index, value);
+		    switch (raw.sqlite3_bind_int(_stmt, index, value))
+		    {
+			    case raw.SQLITE_OK:
+				    break;
+			    case raw.SQLITE_RANGE:
+				    throw new ArgumentOutOfRangeException(nameof(index), index, "");
+			    default:
+				    throw new SQLiteException(raw.sqlite3_errmsg(Db));
+		    }
 		}
 
 	    public void Bind(int index, long value)
 	    {
-		    raw.sqlite3_bind_int64(_stmt, index, value);
+		    switch (raw.sqlite3_bind_int64(_stmt, index, value))
+		    {
+			    case raw.SQLITE_OK:
+				    break;
+			    case raw.SQLITE_RANGE:
+				    throw new ArgumentOutOfRangeException(nameof(index), index, "");
+			    default:
+				    throw new SQLiteException(raw.sqlite3_errmsg(Db));
+		    }
 		}
 
 	    public void Bind(int index, byte[] value)
 	    {
-			raw.sqlite3_bind_blob(_stmt, index, value);
-	    }
+		    switch (raw.sqlite3_bind_blob(_stmt, index, value))
+		    {
+			    case raw.SQLITE_OK:
+				    break;
+			    case raw.SQLITE_RANGE:
+				    throw new ArgumentOutOfRangeException(nameof(index), index, "");
+			    case raw.SQLITE_TOOBIG:
+			    default:
+				    throw new SQLiteException(raw.sqlite3_errmsg(Db));
+		    }
+		}
 
 	    public void Bind(int index, double value)
 	    {
-		    raw.sqlite3_bind_double(_stmt, index, value);
+		    switch (raw.sqlite3_bind_double(_stmt, index, value))
+		    {
+			    case raw.SQLITE_OK:
+				    break;
+			    case raw.SQLITE_RANGE:
+				    throw new ArgumentOutOfRangeException(nameof(index), index, "");
+			    default:
+				    throw new SQLiteException(raw.sqlite3_errmsg(Db));
+		    }
 		}
 
 	    public void Bind(int index, string value)
 	    {
-		    raw.sqlite3_bind_text(_stmt, index, value);
+		    switch (raw.sqlite3_bind_text(_stmt, index, value))
+		    {
+			    case raw.SQLITE_OK:
+				    break;
+			    case raw.SQLITE_RANGE:
+				    throw new ArgumentOutOfRangeException(nameof(index), index, "");
+			    case raw.SQLITE_TOOBIG:
+			    default:
+				    throw new SQLiteException(raw.sqlite3_errmsg(Db));
+		    }
 		}
 
 	    public void Bind(int index, object value)
@@ -136,15 +186,12 @@ namespace SQLite.Net
 
 	    public void Reset()
 	    {
-		    if (raw.sqlite3_reset(_stmt) != raw.SQLITE_OK) throw new SQLiteException("Could not reset statement");
+		    raw.sqlite3_reset(_stmt);
 	    }
 
 		public void Dispose()
 		{
-			if (raw.sqlite3_finalize(_stmt) != raw.SQLITE_OK)
-			{
-				throw new SQLiteException($"Could not finalize statement: {raw.sqlite3_errmsg(Db)}");
-			}
+			raw.sqlite3_finalize(_stmt);
 		}
     }
 }
