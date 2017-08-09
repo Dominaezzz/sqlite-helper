@@ -5,6 +5,7 @@ using System.Text;
 using NUnit.Framework;
 using SQLite.Net;
 using SQLite.Net.Attributes;
+using SQLite.Net.Exceptions;
 
 namespace Tests
 {
@@ -118,7 +119,7 @@ namespace Tests
 		    Assert.AreEqual(1, count);
 		    Assert.AreEqual(1, _db.Products.Count());
 
-		    Assert.Throws<SQLiteException>(() => _db.Products.Insert(product2));
+		    Assert.Throws<UniqueConstraintException>(() => _db.Products.Insert(product2));
 		    Assert.AreEqual(1, _db.Products.Count());
 		}
 
@@ -188,7 +189,7 @@ namespace Tests
 		    Assert.AreEqual(1, count);
 		    Assert.AreEqual(1, _db.Products.Count());
 
-		    Assert.Throws<SQLiteException>(() => _db.Products.Insert(product2, Conflict.Fail));
+		    Assert.Throws<UniqueConstraintException>(() => _db.Products.Insert(product2, Conflict.Fail));
 		    Assert.AreEqual(1, _db.Products.Count());
 		}
 
@@ -205,7 +206,7 @@ namespace Tests
 			_db.BeginTransaction();
 			{
 				Assert.AreEqual(1, _db.Products.Insert(product1, Conflict.Rollback));
-				Assert.Throws<SQLiteException>(() => _db.Products.Insert(product2, Conflict.Rollback));
+				Assert.Throws<UniqueConstraintException>(() => _db.Products.Insert(product2, Conflict.Rollback));
 				Assert.AreEqual(1, _db.Products.Insert(product3, Conflict.Rollback));
 			}
 			Assert.Throws<SQLiteException>(() => _db.EndTransaction());
@@ -308,15 +309,15 @@ namespace Tests
 			    new Product { Name = "Paper", Price = 0.5M },
 		    };
 
-		    _db.Products.Insert(products);
+		    Assert.AreEqual(products.Length, _db.Products.Insert(products));
 		    Assert.AreEqual(products.Length, _db.Products.Count());
 
 			Assert.IsTrue(_db.Products.Any(p => p.Id == 4 && p.Name == "Piano" && p.Price == 2500));
 
 		    var product = _db.Products.Single(p => p.Id == 4);
 		    product.Price = 1234;
-
-		    _db.Products.Update(product);
+			
+			Assert.AreEqual(1, _db.Products.Update(product));
 
 		    Assert.IsTrue(_db.Products.Any(p => p.Id == 4 && p.Name == "Piano" && p.Price == 1234));
 		}
