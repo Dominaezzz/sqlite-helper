@@ -99,7 +99,7 @@ namespace SQLite.Net
 				expression.NodeType != ExpressionType.New;
 		}
 
-		private IEnumerable<T> ExecuteQuery<T>(ProjectionExpression projection)
+		internal IEnumerable<T> ExecuteQuery<T>(ProjectionExpression projection)
 		{
 			List<object> args = new List<object>();
 			string sql = QueryFormatter.Format(projection.Source, args);
@@ -126,103 +126,13 @@ namespace SQLite.Net
 				}
 				
 				Func<ProjectionRow, T> projector = (Func<ProjectionRow, T>)projectorExpr.Compile();
-				ProjectionRow projectionRow = new SQLiteProjectionRow(this, query);
+				ProjectionRow projectionRow = new ProjectionRow(this, query);
 
 				while (query.Step())
 				{
 					T current = projector(projectionRow);
 					yield return current;
 				}
-			}
-		}
-
-		private class SQLiteProjectionRow : ProjectionRow
-		{
-			private readonly SQLiteQueryProvider _provider;
-			private readonly SQLiteQuery _query;
-
-			public SQLiteProjectionRow(SQLiteQueryProvider provider, SQLiteQuery query)
-			{
-				_provider = provider;
-				_query = query;
-			}
-
-			public override object GetValue(int index)
-			{
-				if (index < 0) throw new IndexOutOfRangeException();
-
-				return _query[index];
-			}
-
-			public override long GetLong(int index)
-			{
-				return _query.GetLong(index);
-			}
-
-			public override int GetInt(int index)
-			{
-				return _query.GetInt(index);
-			}
-
-			public override double GetDouble(int index)
-			{
-				return _query.GetDouble(index);
-			}
-
-			public override string GetText(int index)
-			{
-				return _query.GetText(index);
-			}
-
-			public override byte[] GetBlob(int index)
-			{
-				return _query.GetBlob(index);
-			}
-
-			public override bool IsNull(int index)
-			{
-				return _query.IsNull(index);
-			}
-
-			public override IEnumerable<T> ExecuteSubQuery<T>(LambdaExpression query)
-			{
-				ProjectionExpression projection = (ProjectionExpression)new Replacer()
-					.Replace(query.Body, query.Parameters[0], Expression.Constant(this, typeof(ProjectionRow)));
-
-				projection = (ProjectionExpression)Evaluator.PartialEval(projection, CanEvaluateLocally);
-
-				IEnumerable<T> result = _provider.ExecuteQuery<T>(projection);
-				
-				if (typeof(IQueryable<T>).GetTypeInfo().IsAssignableFrom(query.Body.Type.GetTypeInfo()))
-				{
-					return result.AsQueryable();
-				}
-				return result;
-			}
-
-			private static bool CanEvaluateLocally(Expression expression)
-			{
-				return expression.NodeType != ExpressionType.Parameter &&
-					!((int)expression.NodeType >= 1000) &&
-					expression.NodeType != ExpressionType.New;
-			}
-		}
-
-		internal class Replacer : DbExpressionVisitor
-		{
-			private Expression _searchFor, _replaceWith;
-
-			internal Expression Replace(Expression expression, Expression searchFor, Expression replaceWith)
-			{
-				_searchFor = searchFor;
-				_replaceWith = replaceWith;
-
-				return Visit(expression);
-			}
-
-			public override Expression Visit(Expression exp)
-			{
-				return exp == _searchFor ? _replaceWith : base.Visit(exp);
 			}
 		}
 	}
