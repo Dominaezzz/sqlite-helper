@@ -48,15 +48,7 @@ namespace SQLite.Net.Translation
 
 		private static bool ProjectionIsSimple(SelectExpression select)
 		{
-			foreach (ColumnDeclaration decl in select.Columns)
-			{
-				ColumnExpression col = decl.Expression as ColumnExpression;
-				if (col == null || decl.Name != col.Name)
-				{
-					return false;
-				}
-			}
-			return true;
+			return select.Columns.All(c => c.Expression is ColumnExpression && ((ColumnExpression)c.Expression).Name == c.Name);
 		}
 
 		private static bool IsNameMapProjection(SelectExpression select)
@@ -65,9 +57,11 @@ namespace SQLite.Net.Translation
 			{
 				// test that all columns in 'select' are refering to columns in the same position
 				// in 'fromSelect'.
-				return select.Columns.Select(c => c.Expression as ColumnExpression)
-					.Zip(fromSelect.Columns, (colExpr, col) => colExpr != null && colExpr.Name == col.Name)
-					.All(equal => equal);
+				return select.Columns.Zip(
+					fromSelect.Columns,
+					(col, fCol) => col.Expression is ColumnExpression && ((ColumnExpression)col.Expression).Name == fCol.Name
+				)
+				.All(equal => equal);
 			}
 			return false;
 		}
@@ -169,8 +163,17 @@ namespace SQLite.Net.Translation
 					
 					var orderBy = select.OrderBy != null && select.OrderBy.Count > 0 ? select.OrderBy : fromSelect.OrderBy;
 					var groupBy = select.GroupBy != null && select.GroupBy.Count > 0 ? select.GroupBy : fromSelect.GroupBy;
-					Expression offset = select.Offset ?? fromSelect.Offset;
+					Expression offset = select.Offset;
+					if (fromSelect.Offset != null)
+					{
+						offset = offset == null ? fromSelect.Offset : Expression.Add(fromSelect.Offset, offset);
+					}
 					Expression limit = select.Limit ?? fromSelect.Limit;
+					if (fromSelect.Limit != null)
+					{
+						limit = limit == null ? fromSelect.Limit :
+							Expression.Call(typeof(Math), nameof(Math.Min), null, fromSelect.Limit, limit);
+					}
 					bool isDistinct = select.IsDistinct | fromSelect.IsDistinct;
 
 					if (where != select.Where
@@ -224,14 +227,12 @@ namespace SQLite.Net.Translation
 				if (selHasGroupBy && frmHasGroupBy) return false;
 				// cannot move forward order-by if outer has group-by
 				if (frmHasOrderBy && (selHasGroupBy || selHasAggregates || select.IsDistinct)) return false;
-				// cannot move forward a take if outer has take or skip or distinct
-				if (fromSelect.Limit != null && (select.Limit != null || select.Offset != null || select.IsDistinct || selHasAggregates || selHasGroupBy || selHasJoin)) return false;
-				// cannot move forward a skip if outer has skip or distinct
-				if (fromSelect.Offset != null && (select.Offset != null || select.IsDistinct || selHasAggregates || selHasGroupBy || selHasJoin)) return false;
-				// cannot move forward a distinct if outer has take, skip, groupby or a different projection
-				if (fromSelect.IsDistinct && (select.Limit != null || select.Offset != null || !selHasNameMapProjection || selHasGroupBy || selHasAggregates || (selHasOrderBy && !isTopLevel) || selHasJoin))
+				// cannot move forward a limit or an offset if outer has distinct
+				if (fromSelect.Limit != null && fromSelect.Offset != null && (select.IsDistinct || selHasAggregates || selHasGroupBy || selHasJoin)) return false;
+				// cannot move forward a distinct if outer has groupby or a different projection
+				if (fromSelect.IsDistinct && (!selHasNameMapProjection || selHasGroupBy || selHasAggregates || (selHasOrderBy && !isTopLevel) || selHasJoin))
 					return false;
-				if (frmHasAggregates && (select.Limit != null || select.Offset != null || select.IsDistinct || selHasAggregates || selHasGroupBy || selHasJoin)) return false;
+				if (frmHasAggregates && (select.IsDistinct || selHasAggregates || selHasGroupBy || selHasJoin)) return false;
 
 				return true;
 			}
