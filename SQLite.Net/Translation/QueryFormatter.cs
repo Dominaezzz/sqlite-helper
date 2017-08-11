@@ -198,6 +198,8 @@ namespace SQLite.Net.Translation
 						return call;
 					case nameof(Math.Atan2):
 					case nameof(Math.Pow):
+					case nameof(Math.Min):
+					case nameof(Math.Max):
 						_sb.Append(call.Method.Name.ToUpper());
 						_sb.Append("(");
 						Visit(call.Arguments[0]);
