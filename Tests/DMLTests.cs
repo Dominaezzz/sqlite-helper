@@ -171,9 +171,8 @@ namespace Tests
 		    var product2 = new Product { Name = "Laptop", Price = 2000M };
 		    var product3 = new Product { Name = "Computer", Price = 2300M };
 			
-		    Assert.Throws<SQLiteException>(() => _db.Products.Insert(new[] {product1, product2, product3}, Conflict.Abort));
-		    Assert.AreEqual(1, _db.Products.Count());
-		    Assert.IsTrue(_db.Products.Any(p => p.Id == 1 && p.Name == "Laptop" && p.Price == 1500M));
+		    Assert.Throws<UniqueConstraintException>(() => _db.Products.Insert(new[] {product1, product2, product3}, Conflict.Abort));
+		    Assert.AreEqual(0, _db.Products.Count());
 		}
 
 	    [Test]
