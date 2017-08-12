@@ -23,6 +23,7 @@ namespace SQLite.Net.Translation
 		
 		private void MarkColumnAsUsed(string alias, string name)
 		{
+			if (alias == null) return;
 			HashSet<string> columns;
 			if (!_allColumnsUsed.TryGetValue(alias, out columns))
 			{
@@ -34,6 +35,7 @@ namespace SQLite.Net.Translation
 
 		private bool IsColumnUsed(string alias, string name)
 		{
+			if (alias == null) return true;
 			if (_allColumnsUsed.TryGetValue(alias, out HashSet<string> columnsUsed))
 			{
 				if (columnsUsed != null)
@@ -128,7 +130,7 @@ namespace SQLite.Net.Translation
 			// visit mapping in reverse order
 			// Mark all columns that are used in the projector as "used".
 			Expression projector = Visit(projection.Projector);
-			SelectExpression source = (SelectExpression)Visit(projection.Source);
+			QueryExpression source = (QueryExpression) Visit(projection.Source);
 
 			if (projector != projection.Projector || source != projection.Source)
 			{
