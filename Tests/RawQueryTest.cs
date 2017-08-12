@@ -10,6 +10,12 @@ namespace Tests
     public class RawQueryTest
 	{
 		private ChinookDatabase _db;
+		private class TestClass
+		{
+			public long TestLong { get; set; }
+			public string TestString { get; set; }
+			public double TestReal { get; set; }
+		}
 
 		[OneTimeSetUp]
 		public void TestSetUp()
@@ -23,21 +29,40 @@ namespace Tests
 			_db.Dispose();
 		}
 
+		[Test]
+		public void TestQueryDirect()
+		{
+			var result = _db.Query<TestClass>("SELECT 3 AS TestLong, 'Hey!' AS TestString, 5.6 AS TestReal").Single();
+
+			Assert.AreEqual(3, result.TestLong);
+			Assert.AreEqual("Hey!", result.TestString);
+			Assert.AreEqual(5.6, result.TestReal);
+		}
 
 		[Test]
-		public void TestQuery()
+		public void TestQueryDynamic()
 		{
-			var result = _db.Query("SELECT * FROM Track", reader => new Track
-			{
-				TrackId = reader.Get<int>("TrackId"),
-				AlbumId = reader.Get<int?>("AlbumId"),
-				Name = reader.Get<string>("Name")
-			});
+			var result = _db.Query("SELECT 3 AS TestLong, 'Hey!' AS TestString, 5.6 AS TestReal").Single();
 
-			foreach (var track in result)
+			Assert.AreEqual(3, result.TestLong);
+			Assert.AreEqual("Hey!", result.TestString);
+			Assert.AreEqual(5.6, result.TestReal);
+		}
+
+		[Test]
+		public void TestQueryCustom()
+		{
+			var result = _db.Query("SELECT 3 AS TestLong, 'Hey!' AS TestString, 5.6 AS TestReal", reader => new TestClass
 			{
-				Console.WriteLine($"{track.TrackId}, {track.AlbumId}, {track.Name}");
-			}
+				TestLong = reader.Get<long>("TestLong"),
+				TestString = reader.Get<string>("TestString"),
+				TestReal = reader.Get<double>("TestReal")
+			})
+			.Single();
+
+			Assert.AreEqual(3, result.TestLong);
+			Assert.AreEqual("Hey!", result.TestString);
+			Assert.AreEqual(5.6, result.TestReal);
 		}
 
 		[Test]

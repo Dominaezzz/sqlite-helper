@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -205,29 +206,17 @@ namespace SQLite.Net
 	    }
 
 		/// <summary>
-		/// Executes the given sql statement.
-		/// </summary>
-		/// <param name="sql">SQL statement to execute.</param>
-	    public void Execute(string sql)
-	    {
-		    using (var statement = CreateStatement(sql))
-		    {
-			    statement.Execute();
-		    }
-		}
-
-		/// <summary>
 		/// Executes the given sql statement. Don't use this if you want data returned.
 		/// </summary>
 		/// <param name="sql">SQL statement to execute.</param>
-		/// <param name="bindings">You may include ?s in the sql statement, which will be replaced by the values from bindings.</param>
-		public void Execute(string sql, params object[] bindings)
+		/// <param name="args">You may include ?s in the sql statement, which will be replaced by the values from args.</param>
+		public void Execute(string sql, params object[] args)
 	    {
 		    using (var statement = CreateStatement(sql))
 		    {
-			    for (int i = 0; i < bindings.Length; i++)
+			    for (int i = 0; i < args.Length; i++)
 			    {
-				    statement.Bind(i + 1, bindings[i]);
+				    statement.Bind(i + 1, args[i]);
 			    }
 			    statement.Execute();
 		    }
@@ -239,77 +228,98 @@ namespace SQLite.Net
 		/// </summary>
 		/// <typeparam name="T">The type to return the result as.</typeparam>
 		/// <param name="sql">SQL statement to execute.</param>
+		/// <param name="args">You may include ?s in the sql statement, which will be replaced by the values from args.</param>
 		/// <returns>The value at the first row and first column.</returns>
-		public T ExecuteScalar<T>(string sql)
+		public T ExecuteScalar<T>(string sql, params object[] args)
 	    {
-			using (var query = ExecuteQuery(sql))
-			{
-				query.Step();
-				return (T) Convert.ChangeType(query[0], typeof(T));
-			}
-		}
-
-		/// <summary>
-		/// Executes the given sql statement and returns the value at the first row and first column.
-		/// <para>Should return a 1x1 result.</para>
-		/// </summary>
-		/// <typeparam name="T">The type to return the result as.</typeparam>
-		/// <param name="sql">SQL statement to execute.</param>
-		/// <param name="bindings">You may include ?s in the sql statement, which will be replaced by the values from bindings.</param>
-		/// <returns>The value at the first row and first column.</returns>
-		public T ExecuteScalar<T>(string sql, params object[] bindings)
-	    {
-		    using (var query = ExecuteQuery(sql, bindings))
+		    using (var query = ExecuteQuery(sql, args))
 		    {
-			    query.Step();
-			    return (T)Convert.ChangeType(query[0], typeof(T));
+				if (query.Step())
+				{
+					var projExpr = new ColumnExpression(typeof(T), null, query.GetColumnName(0));
+					var projectionExpr = ProjectionBuilder.Build(projExpr, null, s => query.GetColumnIndex(s));
+					var projector = (Func<ProjectionRow, T>)projectionExpr.Compile();
+					return projector(new ProjectionRow(_provider, query));
+				}
+			    return default(T);
 		    }
 	    }
-
-		public SQLiteQuery ExecuteQuery(string sql)
-		{
-			return new SQLiteQuery(_db, sql);
-	    }
-
-		public SQLiteQuery ExecuteQuery(string sql, params object[] bindings)
+		
+		public SQLiteQuery ExecuteQuery(string sql, params object[] args)
 	    {
-			SQLiteQuery query = ExecuteQuery(sql);
-		    for (int i = 0; i < bindings.Length; i++)
+			SQLiteQuery query = new SQLiteQuery(_db, sql);
+		    for (int i = 0; i < args.Length; i++)
 		    {
-			    query.Bind(i + 1, bindings[i]);
+			    query.Bind(i + 1, args[i]);
 		    }
 		    return query;
 		}
 
 		/// <summary>
-		/// Creates an <see cref="IQueryable{T}"/> for the query given.
-		/// <para>The returned <see cref="IQueryable{T}"/> can be filtered and have other LINQ operations applied to it.</para>
+		/// Executes a query with the given text (SQL).
+		/// Place '?' in the sql text for each of the arguments.
+		/// It returns each row as a dynamic object mapping the columns to properties.
+		/// </summary>
+		/// <param name="sql">The sql text of the query, with optional escaped parameters.</param>
+		/// <param name="args">Parameters to bind to the SQL.</param>
+		/// <returns>An IEnumerable with one result for each row from the query.</returns>
+	    public IEnumerable<dynamic> Query(string sql, params object[] args)
+	    {
+		    using (var query = ExecuteQuery(sql, args))
+		    {
+			    if (query.Columns.Count() != query.Columns.Distinct().Count())
+			    {
+				    throw new ArgumentException("Query should return unique set of column names.");
+			    }
+			    while (query.Step())
+			    {
+					object row = new ExpandoObject();
+				    var dictionary = (IDictionary<string, object>) row;
+				    for (int i = 0; i < query.ColumnCount; i++)
+				    {
+					    dictionary[query.GetColumnName(i)] = query[i];
+				    }
+				    yield return row;
+			    }
+		    }
+	    }
+
+		/// <summary>
+		/// Executes a query with the given text (SQL).
+		/// Place '?' in the sql text for each of the arguments.
+		/// It returns each row as a dynamic object mapping the columns to properties.
 		/// <para>This is limited to public properties only, which have to match the columns returned from the query.</para>
 		/// </summary>
-		/// <typeparam name="T">The element type of the <see cref="IQueryable{T}"/></typeparam>
+		/// <typeparam name="T">The element type of the <see cref="IEnumerable{T}"/></typeparam>
 		/// <param name="sql">The query to be executed.</param>
-		/// <returns></returns>
-		public IQueryable<T> Query<T>(string sql)
+		/// <param name="args">Parameters to bind to the SQL.</param>
+		/// <returns>An IEnumerable with one result for each row from the query.</returns>
+		public IEnumerable<T> Query<T>(string sql, params object[] args)
 	    {
-			return new Query<T>(
-			    _provider,
-			    new ProjectionExpression(
-				    new RawQueryExpression(typeof(IQueryable<T>), null, sql),
-					Expression.MemberInit(
-						Expression.New(typeof(T)),
-						typeof(T).GetRuntimeProperties()
-						.Where(pi => pi.IsDefined(typeof(IgnoreAttribute)))
-						.Select(pi => Expression.Bind(
-							pi,
-							new ColumnExpression(
-								pi.PropertyType,
-								null,
-								Orm.GetColumnName(pi)
-							)
-						))
-					)
-				)
-		    );
+		    using (var query = ExecuteQuery(sql, args))
+		    {
+			    List<MemberBinding> bindings = new List<MemberBinding>();
+			    foreach (var prop in typeof(T).GetRuntimeProperties().Where(p => !p.IsDefined(typeof(IgnoreAttribute))))
+				{
+					string name = Orm.GetColumnName(prop);
+					if (query.HasColumn(name))
+					{
+						bindings.Add(Expression.Bind(
+							prop, new ColumnExpression(prop.PropertyType, null, name)
+						));
+					}
+			    }
+
+			    var projExpr = Expression.MemberInit(Expression.New(typeof(T)), bindings);
+			    var projectionExpr = ProjectionBuilder.Build(projExpr, null, s => query.GetColumnIndex(s));
+			    var projector = (Func<ProjectionRow, T>) projectionExpr.Compile();
+				ProjectionRow projectionRow = new ProjectionRow(_provider, query);
+
+			    while (query.Step())
+			    {
+				    yield return projector(projectionRow);
+			    }
+		    }
 	    }
 
 		/// <summary>
