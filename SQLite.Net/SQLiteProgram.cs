@@ -188,10 +188,33 @@ namespace SQLite.Net
 	    {
 		    raw.sqlite3_reset(_stmt);
 	    }
+		
+		private bool _disposedValue = false; // To detect redundant calls
 
+		protected virtual void Dispose(bool disposing)
+		{
+			if (!_disposedValue)
+			{
+				if (disposing)
+				{
+					// TODO: dispose managed state (managed objects).
+				}
+				raw.sqlite3_finalize(_stmt);
+
+				_disposedValue = true;
+			}
+		}
+		
+		~SQLiteProgram()
+		{
+			Dispose(false);
+		}
+
+		// This code added to correctly implement the disposable pattern.
 		public void Dispose()
 		{
-			raw.sqlite3_finalize(_stmt);
+			Dispose(true);
+			GC.SuppressFinalize(this);
 		}
-    }
+	}
 }

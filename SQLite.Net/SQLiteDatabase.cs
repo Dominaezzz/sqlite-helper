@@ -185,14 +185,38 @@ namespace SQLite.Net
 				property.SetValue(this, constructor.Invoke(new object[]{ _provider, name }));
 		    }
 	    }
-
-		/// <summary>
-		/// Closes the database connection if it is open.
-		/// </summary>
+		
+	    protected virtual void Dispose(bool disposing)
+	    {
+		    if (IsOpen)
+		    {
+			    if (disposing)
+			    {
+				    if (raw.sqlite3_close(_db) != raw.SQLITE_OK)
+				    {
+					    throw new SQLiteException(raw.sqlite3_errmsg(_db));
+				    }
+			    }
+			    else
+				{
+					raw.sqlite3_close_v2(_db);
+				}
+				IsOpen = false;
+		    }
+	    }
+		
+		~SQLiteDatabase()
+		{
+			Dispose(false);
+		}
+		
+	    /// <summary>
+	    /// Closes the database connection if it is open.
+	    /// </summary>
 		public void Dispose()
 	    {
-		    if (IsOpen) raw.sqlite3_close(_db);
-		    IsOpen = false;
+		    Dispose(true);
+		    GC.SuppressFinalize(this);
 	    }
 
 		/// <summary>
@@ -758,5 +782,5 @@ namespace SQLite.Net
 			    throw;
 		    }
 	    }
-    }
+	}
 }
