@@ -10,13 +10,12 @@ namespace SQLite.Net
     public class SQLiteQuery : SQLiteProgram
     {
 	    private readonly Dictionary<string, int> _columns;
-
-	    public int Position { get; private set; }
+		
 	    public int ColumnCount => raw.sqlite3_column_count(_stmt);
+	    public IEnumerable<string> Columns => Enumerable.Range(0, ColumnCount).Select(GetColumnName);
 
 	    internal SQLiteQuery(sqlite3 db, string sql) : base(db, sql)
 	    {
-		    Position = 0;
 		    _columns = Enumerable.Range(0, ColumnCount).ToDictionary(GetColumnName);
 	    }
 
@@ -25,7 +24,6 @@ namespace SQLite.Net
 			switch (raw.sqlite3_step(_stmt))
 			{
 				case raw.SQLITE_ROW:
-					Position++;
 					return true;
 				case raw.SQLITE_DONE:
 					return false;
@@ -56,6 +54,11 @@ namespace SQLite.Net
 			}
 		}
 		public object this[string column] => this[GetColumnIndex(column)];
+
+	    public bool HasColumn(string name)
+	    {
+		    return _columns.ContainsKey(name);
+	    }
 
 	    public int GetColumnIndex(string columnName)
 	    {
