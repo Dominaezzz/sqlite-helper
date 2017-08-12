@@ -198,7 +198,6 @@ namespace SQLite.Net.Translation
 					case (ExpressionType)DbExpressionType.Scalar:
 					case (ExpressionType)DbExpressionType.Aggregate:
 					case (ExpressionType)DbExpressionType.Function:
-					case (ExpressionType)DbExpressionType.TypeChange:
 					case (ExpressionType)DbExpressionType.HostParameter:
 						return true;
 					default:

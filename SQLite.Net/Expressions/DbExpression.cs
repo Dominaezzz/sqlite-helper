@@ -17,10 +17,8 @@ namespace SQLite.Net.Expressions
 		In,
 		Scalar,
 		Exists,
-		View,
 		RawQuery,
 		Function,
-		TypeChange,
 		HostParameter
 	}
 

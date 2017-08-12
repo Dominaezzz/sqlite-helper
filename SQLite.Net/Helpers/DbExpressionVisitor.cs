@@ -17,8 +17,6 @@ namespace SQLite.Net.Helpers
 			{
 				case DbExpressionType.Table:
 					return VisitTable((TableExpression)exp);
-				case DbExpressionType.View:
-					return VisitView((ViewExpression)exp);
 				case DbExpressionType.RawQuery:
 					return VisitRawQuery((RawQueryExpression)exp);
 				case DbExpressionType.Join:
@@ -37,8 +35,6 @@ namespace SQLite.Net.Helpers
 					return VisitSubquery((SubQueryExpression)exp);
 				case DbExpressionType.Function:
 					return VisitFunction((FunctionExpression) exp);
-				case DbExpressionType.TypeChange:
-					return VisitTypeChange((TypeChangeExpression) exp);
 				case DbExpressionType.HostParameter:
 					return VisitHostParameter((HostParameterExpression) exp);
 				default:
@@ -49,11 +45,6 @@ namespace SQLite.Net.Helpers
 		protected virtual Expression VisitTable(TableExpression table)
 		{
 			return table;
-		}
-
-		protected virtual Expression VisitView(ViewExpression view)
-		{
-			return view;
 		}
 
 		protected virtual Expression VisitRawQuery(RawQueryExpression rawQuery)
@@ -193,16 +184,6 @@ namespace SQLite.Net.Helpers
 				return new FunctionExpression(function.Type, function.Name, arguments);
 			}
 			return function;
-		}
-
-		protected virtual Expression VisitTypeChange(TypeChangeExpression typeChange)
-		{
-			Expression expr = Visit(typeChange.Expression);
-			if (expr != typeChange.Expression)
-			{
-				return new TypeChangeExpression(typeChange.Type, expr);
-			}
-			return typeChange;
 		}
 
 		protected virtual Expression VisitHostParameter(HostParameterExpression hostParameter)

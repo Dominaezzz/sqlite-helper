@@ -67,7 +67,7 @@ namespace SQLite.Net.Translation
 				else if (typeof(View<>).MakeGenericType(elementType) == queryable.GetType())
 				{
 					var nameProperty = queryable.GetType().GetRuntimeProperty("Name");
-					source = new ViewExpression(GetNewAlias(), (string) nameProperty.GetValue(queryable));
+					source = new TableExpression(GetNewAlias(), (string) nameProperty.GetValue(queryable));
 				}
 				else
 				{

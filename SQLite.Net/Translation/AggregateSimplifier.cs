@@ -89,8 +89,6 @@ namespace SQLite.Net.Translation
 		    {
 				case (ExpressionType)DbExpressionType.Table:
 					return ((TableExpression) left).Name == ((TableExpression) right).Name;
-			    case (ExpressionType)DbExpressionType.View:
-				    return ((ViewExpression) left).Name == ((ViewExpression) right).Name;
 			    case (ExpressionType)DbExpressionType.Join:
 				    JoinExpression leftJoin = (JoinExpression) left;
 				    JoinExpression rightJoin = (JoinExpression) right;

@@ -926,13 +926,6 @@ namespace SQLite.Net.Translation
 						.Append(']')
 						.Append(" AS ").Append(table.Alias);
 					break;
-				case DbExpressionType.View:
-					ViewExpression view = (ViewExpression)source;
-					_sb.Append('[')
-						.Append(view.Name)
-						.Append(']')
-						.Append(" AS ").Append(view.Alias);
-					break;
 				case DbExpressionType.RawQuery:
 					RawQueryExpression rawQuery = (RawQueryExpression)source;
 					_sb.Append("(")
@@ -1058,11 +1051,6 @@ namespace SQLite.Net.Translation
 			_sb.Append(")");
 			Indent(Indentation.Outer);
 			return inExpression;
-		}
-
-		protected override Expression VisitTypeChange(TypeChangeExpression typeChange)
-		{
-			return Visit(typeChange.Expression);
 		}
 
 		protected virtual bool IsPredicate(Expression expr)
