@@ -519,9 +519,7 @@ namespace SQLite.Net
 	    {
 			CreateIndex(
 				name, unique, tableName,
-				GetSelectedColumns(columns.Body)
-				.Select(pi => pi.GetCustomAttribute<ColumnAttribute>()?.Name ?? pi.Name)
-				.ToArray()
+				GetSelectedColumns(columns.Body).Select(Orm.GetColumnName).ToArray()
 			);
 		}
 
