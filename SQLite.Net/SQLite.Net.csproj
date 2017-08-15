@@ -29,7 +29,7 @@ Fixed bug with Take/ElementAt/ElementAtOrDefault.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="1.1.7" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="1.1.8" />
   </ItemGroup>
 
   <ItemGroup>
