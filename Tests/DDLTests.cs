@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using NUnit.Framework;
 using SQLite.Net;
+using SQLite.Net.Attributes;
 
 namespace Tests
 {
@@ -13,16 +14,27 @@ namespace Tests
 	    public class PlainDb : SQLiteDatabase
 	    {
 		    public Table<User> Users { get; set; }
-			public View<User> UserView { get; set; }
+			public View<UserView> UserView { get; set; }
 	    }
 
+		[Table("Users")]
 	    public class User
 	    {
+			[PrimaryKey]
 		    public Guid UserGuid { get; set; }
+			[NotNull]
 			public string FirstName { get; set; }
+			[NotNull]
 			public string LastName { get; set; }
 			public DateTime? DateOfBirth { get; set; }
 	    }
+		public class UserView
+		{
+			public Guid UserGuid { get; set; }
+			public string FirstName { get; set; }
+			public string LastName { get; set; }
+			public DateTime? DateOfBirth { get; set; }
+		}
 
 		[Test]
 	    public void TestCreateTable()
@@ -31,14 +43,7 @@ namespace Tests
 		    {
 				Assert.AreEqual(0, db.SQLiteMaster.Count(o => o.Type == "table"));
 				
-				db.CreateTable("Users", c => new
-				{
-					UserGuid = c.Column<Guid>(primaryKey:true),
-					FirstName = c.Column<string>(nullable:false),
-					LastName = c.Column<string>(nullable:false),
-					DateOfBirth = c.Column<DateTime?>()
-				}, 
-				t => new
+				db.CreateTable<User>(t => new
 				{
 					UsersUnique = t.Unique(u => new { u.FirstName, u.LastName })
 				});
@@ -115,15 +120,8 @@ namespace Tests
 	    {
 		    using (var db = new PlainDb())
 		    {
-				db.CreateTable("Users", c => new
-				{
-					UserGuid = c.Column<Guid>(primaryKey: true),
-					FirstName = c.Column<string>(nullable: false),
-					LastName = c.Column<string>(nullable: false),
-					DateOfBirth = c.Column<DateTime?>()
-				});
-
-				db.CreateIndex("UsersUnique", true, "Users", new []{ "FirstName" , "LastName" });
+				db.CreateTable<User>();
+				db.CreateIndex<User>("UsersUnique", true, u => new { u.FirstName , u.LastName });
 
 			    var indexColumns = db.Query("PRAGMA index_info([UsersUnique]);", reader => new
 			    {
@@ -144,13 +142,7 @@ namespace Tests
 	    {
 			using (var db = new PlainDb())
 			{
-				db.CreateTable("Users", c => new
-				{
-					UserGuid = c.Column<Guid>(primaryKey: true, nullable:true),
-					FirstName = c.Column<string>(nullable: false),
-					LastName = c.Column<string>(nullable: false),
-					DateOfBirth = c.Column<DateTime?>()
-				});
+				db.CreateTable<User>();
 
 				db.CreateView("UserView", db.Users.Where(u => u.DateOfBirth != null));
 
@@ -173,7 +165,7 @@ namespace Tests
 		}
 
 		[Test]
-		[Ignore("Not implemented")]
+		[NUnit.Framework.Ignore("Not implemented")]
 	    public void TestCreateTrigger()
 	    {
 		    

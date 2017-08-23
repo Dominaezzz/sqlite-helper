@@ -487,6 +487,144 @@ namespace SQLite.Net
 
 		    Execute(sb.ToString());
 	    }
+		
+		/// <summary>
+		/// Creates a table in the database to store the given type <typeparamref name="T"/>,
+		/// with the given <paramref name="constraints"/>.
+		/// </summary>
+		/// <typeparam name="T">Type to create table for.</typeparam>
+		/// <param name="constraints">Expression describing contraints to be created with the table.</param>
+		public void CreateTable<T>(Expression<Func<ITableBuilder<T>, object>> constraints = null)
+		{
+			string GetAction(OnAction action)
+			{
+				switch (action)
+				{
+					case OnAction.SetNull:
+						return "SET NULL";
+					case OnAction.SetDefault:
+						return "SET DEFAULT";
+					case OnAction.Cascade:
+						return "CASCADE";
+					case OnAction.Restrict:
+						return "RESTRICT";
+					case OnAction.NoAction:
+						return "NO ACTION";
+					default: throw new ArgumentOutOfRangeException(nameof(action));
+				}
+			}
+
+			List<string> tableConstraints = new List<string>();
+			if (constraints != null)
+			{
+				NewExpression constraintsInit = (NewExpression)constraints.Body;
+				for (int i = 0; i < constraintsInit.Arguments.Count; i++)
+				{
+					MethodCallExpression methodCall = (MethodCallExpression)constraintsInit.Arguments[i];
+					var args = methodCall.Arguments;
+
+					string constraint = $"CONSTRAINT [{constraintsInit.Members[i].Name}] ";
+
+					switch (methodCall.Method.Name)
+					{
+						case nameof(ITableBuilder<T>.PrimaryKey):
+							constraint += "PRIMARY KEY([";
+							constraint += string.Join("], [", GetSelectedColumns(args[0]).Select(Orm.GetColumnName));
+							constraint += "])";
+							break;
+						case nameof(ITableBuilder<T>.Unique):
+							constraint += "UNIQUE([";
+							constraint += string.Join("], [", GetSelectedColumns(args[0]).Select(Orm.GetColumnName));
+							constraint += "])";
+							break;
+						case nameof(ITableBuilder<T>.ForeignKey):
+							constraint += "FOREIGN KEY([";
+							constraint += string.Join("], [", GetSelectedColumns(args[0]).Select(Orm.GetColumnName));
+							constraint += $"]) REFERENCES [{((ConstantExpression)args[1]).Value}]";
+							if (args[2] is NewArrayExpression newArray && newArray.Expressions.Count > 0)
+							{
+								constraint += "([";
+								constraint += string.Join("], [", newArray.Expressions.Cast<ConstantExpression>().Select(c => c.Value).Cast<string>());
+								constraint += "])";
+							}
+							break;
+					}
+
+					tableConstraints.Add(constraint);
+				}
+			}
+
+			bool hasCompositeKey = typeof(T).GetRuntimeProperties()
+									   .Count(pi => !pi.IsDefined(typeof(IgnoreAttribute)) && pi.IsDefined(typeof(PrimaryKeyAttribute))) > 1;
+
+			// Build create statement.
+			StringBuilder sb = new StringBuilder();
+
+			sb.Append("CREATE TABLE [").Append(Orm.GetSetName(typeof(T))).Append("]").AppendLine();
+			sb.Append("(").AppendLine();
+			{
+				List<PropertyInfo> primaryKeys = hasCompositeKey ? new List<PropertyInfo>() : null;
+				foreach (var pi in typeof(T).GetRuntimeProperties().Where(pi => !pi.IsDefined(typeof(IgnoreAttribute))))
+				{
+					sb.Append('[').Append(Orm.GetColumnName(pi)).Append(']');
+					sb.Append(" ").Append(Orm.GetDataType(pi.PropertyType).ToString().ToUpper());
+
+					var primaryKey = pi.GetCustomAttribute<PrimaryKeyAttribute>();
+					if (primaryKey != null)
+					{
+						if (hasCompositeKey)
+						{
+							if (primaryKey.AutoIncrement)
+							{
+								throw new ArgumentException("Composite PrimaryKey cannot have AutoIncrement.");
+							}
+							primaryKeys.Add(pi);
+						}
+						else
+						{
+							sb.Append(" PRIMARY KEY");
+							if (primaryKey.AutoIncrement)
+							{
+								sb.Append(" AUTOINCREMENT");
+							}
+						}
+					}
+					if (pi.IsDefined(typeof(NotNullAttribute))) sb.Append(" NOT NULL");
+					if (pi.IsDefined(typeof(UniqueAttribute))) sb.Append(" UNIQUE");
+
+					var foreignKey = pi.GetCustomAttribute<ForeignKeyAttribute>();
+					if (foreignKey != null)
+					{
+						sb.Append(" REFERENCES [").Append(foreignKey.Table).Append("](").Append(foreignKey.Column).Append(")");
+						if (foreignKey.OnDelete != null)
+						{
+							sb.Append(" ON DELETE ").Append(GetAction(foreignKey.OnDelete.Value));
+						}
+						if (foreignKey.OnUpdate != null)
+						{
+							sb.Append(" ON UPDATE ").Append(GetAction(foreignKey.OnUpdate.Value));
+						}
+					}
+					sb.AppendLine(", ");
+				}
+
+				if (hasCompositeKey)
+				{
+					sb.Append("PRIMARY KEY([");
+					sb.Append(string.Join("], [", primaryKeys.Select(Orm.GetColumnName)));
+					sb.Append("])").AppendLine(", ");
+				}
+				foreach (var constraint in tableConstraints)
+				{
+					sb.Append(constraint).AppendLine(", ");
+				}
+
+				sb.Remove(sb.Length - 4, 4).AppendLine();
+			}
+			sb.Append(");").AppendLine();
+
+			Execute(sb.ToString());
+		}
 
 		/// <summary>
 		/// Creates a view with the given name and query.
