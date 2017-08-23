@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using SQLite.Net.Attributes;
+using SQLite.Net.Builders;
 
 namespace SQLite.Net
 {
@@ -73,9 +74,43 @@ namespace SQLite.Net
 			return AllTypes.Contains(type) || type.GetTypeInfo().IsEnum;
 		}
 
+		public static string GetSetName(Type type)
+		{
+			return type.GetTypeInfo().GetCustomAttribute<TableAttribute>()?.Name ?? type.Name;
+		}
+
 		public static string GetColumnName(PropertyInfo property)
 		{
 			return property.GetCustomAttribute<ColumnAttribute>()?.Name ?? property.Name;
+		}
+
+		public static DataType GetDataType(Type columnType)
+		{
+			columnType = Nullable.GetUnderlyingType(columnType) ?? columnType;
+			if (IntegerTypes.Contains(columnType))
+			{
+				return DataType.Integer;
+			}
+			else if (FractionalTypes.Contains(columnType))
+			{
+				return DataType.Real;
+			}
+			else if (TextTypes.Contains(columnType))
+			{
+				return DataType.Text;
+			}
+			else if (columnType == typeof(byte[]))
+			{
+				return DataType.Blob;
+			}
+			else if (columnType.GetTypeInfo().IsEnum)
+			{
+				return columnType.GetTypeInfo().IsDefined(typeof(StoreAsTextAttribute)) ? DataType.Text : DataType.Integer;
+			}
+			else
+			{
+				throw new ArgumentOutOfRangeException();
+			}
 		}
 	}
 }

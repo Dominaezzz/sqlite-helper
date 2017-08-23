@@ -59,31 +59,7 @@ namespace SQLite.Net.Builders
 			    nullable = nullable ?? false;
 		    }
 
-		    DataType type;
-		    if (Orm.IntegerTypes.Contains(columnType))
-		    {
-			    type = DataType.Integer;
-		    }
-		    else if (Orm.FractionalTypes.Contains(columnType))
-		    {
-			    type = DataType.Real;
-		    }
-		    else if (Orm.TextTypes.Contains(columnType))
-		    {
-			    type = DataType.Text;
-		    }
-		    else if (columnType == typeof(byte[]))
-		    {
-			    type = DataType.Blob;
-		    }
-			else if (columnType.GetTypeInfo().IsEnum)
-		    {
-			    type = columnType.GetTypeInfo().IsDefined(typeof(StoreAsTextAttribute)) ? DataType.Text : DataType.Integer;
-		    }
-		    else
-		    {
-			    throw new ArgumentOutOfRangeException();
-		    }
+		    DataType type = Orm.GetDataType(columnType);
 
 		    return new ColumnModel(name, type, nullable.Value, defaultValue, primaryKey, autoIncrement);
 		}
