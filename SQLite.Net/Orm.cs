@@ -74,9 +74,14 @@ namespace SQLite.Net
 			return AllTypes.Contains(type) || type.GetTypeInfo().IsEnum;
 		}
 
-		public static string GetSetName(Type type)
+		public static string GetTableName(Type type)
 		{
 			return type.GetTypeInfo().GetCustomAttribute<TableAttribute>()?.Name ?? type.Name;
+		}
+
+		public static string GetViewName(Type type)
+		{
+			return type.GetTypeInfo().GetCustomAttribute<ViewAttribute>()?.Name ?? type.Name;
 		}
 
 		public static string GetColumnName(PropertyInfo property)

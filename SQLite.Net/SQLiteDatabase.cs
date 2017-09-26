@@ -175,11 +175,21 @@ namespace SQLite.Net
 
 			    if (!typeInfo.IsGenericType) continue;
 		        Type genericeType = tableType.GetGenericTypeDefinition();
-                if(!(typeof(Table<>) == genericeType || typeof(View<>) == genericeType)) continue;
-
 			    Type type = typeInfo.GenericTypeArguments[0];
                 
-			    string name = type.GetTypeInfo().GetCustomAttribute<TableAttribute>()?.Name ?? property.Name;
+				string name;
+				if (typeof(Table<>) == genericeType)
+				{
+					name = Orm.GetTableName(type);
+				}
+				else if(typeof(View<>) == genericeType)
+				{
+					name = Orm.GetViewName(type);
+				}
+				else
+				{
+				    continue;
+				}
 				
 			    var constructor = typeInfo.DeclaredConstructors.First();
 				property.SetValue(this, constructor.Invoke(new object[]{ _provider, name }));
@@ -560,7 +570,7 @@ namespace SQLite.Net
 			// Build create statement.
 			StringBuilder sb = new StringBuilder();
 
-			sb.Append("CREATE TABLE [").Append(Orm.GetSetName(typeof(T))).Append("]").AppendLine();
+			sb.Append("CREATE TABLE [").Append(Orm.GetTableName(typeof(T))).Append("]").AppendLine();
 			sb.Append("(").AppendLine();
 			{
 				List<PropertyInfo> primaryKeys = hasCompositeKey ? new List<PropertyInfo>() : null;
