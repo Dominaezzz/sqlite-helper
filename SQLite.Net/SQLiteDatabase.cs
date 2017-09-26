@@ -140,6 +140,10 @@ namespace SQLite.Net
 		/// </summary>
 		public Table<DatabaseObject> SQLiteTempMaster { get; }
 
+	    public event EventHandler<TableChangedArgs> TableChanged;
+	    public event EventHandler Commit;
+	    public event EventHandler Rollback;
+
 		/// <summary>
 		/// Creates a database connection to the file at the path specified or creates an in-memory database if path is null.
 		/// <para>
@@ -194,6 +198,30 @@ namespace SQLite.Net
 			    var constructor = typeInfo.DeclaredConstructors.First();
 				property.SetValue(this, constructor.Invoke(new object[]{ _provider, name }));
 		    }
+
+			raw.sqlite3_update_hook(_db, (data, type, database, table, rowid) =>
+			{
+				ChangeType changeType;
+				switch (type)
+				{
+					case raw.SQLITE_INSERT:
+						changeType = ChangeType.Insert;
+						break;
+					case raw.SQLITE_DELETE:
+						changeType = ChangeType.Delete;
+						break;
+					case raw.SQLITE_UPDATE:
+						changeType = ChangeType.Update;
+						break;
+					default:return;
+				}
+				TableChanged?.Invoke(_db, new TableChangedArgs(changeType, table, rowid));
+			}, null);
+			raw.sqlite3_commit_hook(_db, data =>
+			{
+				Commit?.Invoke(_db, EventArgs.Empty); return 0;
+			}, null);
+			raw.sqlite3_rollback_hook(_db, data => Rollback?.Invoke(_db, EventArgs.Empty), null);
 	    }
 		
 	    protected virtual void Dispose(bool disposing)
