@@ -101,6 +101,7 @@ namespace Tests
 			    .Count;
 	    }
 
+		[Table("DataTable")]
 		public class Data
 		{
 			[PrimaryKey(AutoIncrement = true)]

@@ -34,6 +34,7 @@ namespace Tests
 				UserVersion++;
 			}
 		}
+		[Table("Products")]
 		public class Product
 		{
 			[PrimaryKey]
