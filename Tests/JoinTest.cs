@@ -1,30 +1,26 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
+using Xunit;
 
 namespace Tests
 {
-	[TestFixture(Category = "Join")]
-    public class JoinTest
+	[Trait("Category", "Join")]
+    public class JoinTest : IDisposable
 	{
-		private ChinookDatabase _db;
+		private readonly ChinookDatabase _db;
 
-		[OneTimeSetUp]
-		public void TestSetUp()
+		public JoinTest()
 		{
 			_db = new ChinookDatabase();
 		}
 
-		[OneTimeTearDown]
-		public void TestTearDown()
+		public void Dispose()
 		{
 			_db.Dispose();
 		}
 
 
-		[Test]
+		[Fact]
 		public void TestJoin()
 		{
 			const string querySQL = "SELECT Album.AlbumId, Track.TrackId " +
@@ -38,15 +34,15 @@ namespace Tests
 				});
 				foreach (var item in result)
 				{
-					Assert.IsTrue(query.Step());
-					Assert.AreEqual(query.GetInt(0), item.AlbumId);
-					Assert.AreEqual(query.GetInt(1), item.TrackId);
+					Assert.True(query.Step());
+					Assert.Equal(query.GetInt(0), item.AlbumId);
+					Assert.Equal(query.GetInt(1), item.TrackId);
 				}
-				Assert.IsFalse(query.Step());
+				Assert.False(query.Step());
 			}
 		}
 
-		[Test]
+		[Fact]
 		public void TestJoinNested()
 		{
 			const string querySQL = "SELECT Artist.ArtistId, Album.AlbumId, Track.TrackId " +
@@ -63,18 +59,18 @@ namespace Tests
 
 				foreach (var item in result)
 				{
-					Assert.IsTrue(query.Step());
-					Assert.AreEqual(query.GetInt(0), item.ArtistId);
-					Assert.AreEqual(query.GetInt(1), item.AlbumId);
-					Assert.AreEqual(query.GetInt(2), item.TrackId);
+					Assert.True(query.Step());
+					Assert.Equal(query.GetInt(0), item.ArtistId);
+					Assert.Equal(query.GetInt(1), item.AlbumId);
+					Assert.Equal(query.GetInt(2), item.TrackId);
 				}
-				Assert.IsFalse(query.Step());
+				Assert.False(query.Step());
 			}
 		}
 
-		[Test]
-		[Category("GroupBy")]
-		[Category("Aggregate")]
+		[Fact]
+		[Trait("Category", "GroupBy")]
+		[Trait("Category", "Aggregate")]
 		public void TestJoinThenGroupBy()
 		{
 			const string querySQL =
@@ -98,18 +94,18 @@ namespace Tests
 					});
 				foreach (var item in result)
 				{
-					Assert.IsTrue(query.Step());
-					Assert.AreEqual(query.GetInt(0), item.ArtistId);
-					Assert.AreEqual(query.GetText(1), item.ArtistName);
-					Assert.AreEqual(query.GetInt(2), item.AlbumCount);
+					Assert.True(query.Step());
+					Assert.Equal(query.GetInt(0), item.ArtistId);
+					Assert.Equal(query.GetText(1), item.ArtistName);
+					Assert.Equal(query.GetInt(2), item.AlbumCount);
 				}
-				Assert.IsFalse(query.Step());
+				Assert.False(query.Step());
 			}
 		}
 
-		[Test]
-		[Category("GroupBy")]
-		[Category("SubIteration")]
+		[Fact]
+		[Trait("Category", "GroupBy")]
+		[Trait("Category", "SubIteration")]
 		public void TestGroupJoin()
 		{
 			const string querySQL =
@@ -127,26 +123,26 @@ namespace Tests
 				});
 				foreach (var item in result)
 				{
-					Assert.IsTrue(query.Step());
-					Assert.AreEqual(query.GetInt(0), item.Artist.ArtistId);
+					Assert.True(query.Step());
+					Assert.Equal(query.GetInt(0), item.Artist.ArtistId);
 
 					using (var subQuery = _db.ExecuteQuery("SELECT AlbumId FROM Album WHERE ArtistId IS ?", item.Artist.ArtistId))
 					{
 						foreach (var subItem in item.Albums)
 						{
-							Assert.IsTrue(subQuery.Step());
-							Assert.AreEqual(subQuery.GetInt(0), subItem.AlbumId);
+							Assert.True(subQuery.Step());
+							Assert.Equal(subQuery.GetInt(0), subItem.AlbumId);
 						}
-						Assert.IsFalse(subQuery.Step());
+						Assert.False(subQuery.Step());
 					}
 				}
-				Assert.IsFalse(query.Step());
+				Assert.False(query.Step());
 			}
 		}
 
-		[Test]
-		[Category("GroupBy")]
-		[Category("Aggregate")]
+		[Fact]
+		[Trait("Category", "GroupBy")]
+		[Trait("Category", "Aggregate")]
 		public void TestGroupJoinWithAggregate()
 		{
 			const string querySQL =
@@ -165,12 +161,12 @@ namespace Tests
 				});
 				foreach (var item in result)
 				{
-					Assert.IsTrue(query.Step());
-					Assert.AreEqual(query.GetInt(0), item.ArtistId);
-					Assert.AreEqual(query.GetText(1), item.ArtistName);
-					Assert.AreEqual(query.GetInt(2), item.AlbumCount);
+					Assert.True(query.Step());
+					Assert.Equal(query.GetInt(0), item.ArtistId);
+					Assert.Equal(query.GetText(1), item.ArtistName);
+					Assert.Equal(query.GetInt(2), item.AlbumCount);
 				}
-				Assert.IsFalse(query.Step());
+				Assert.False(query.Step());
 			}
 		}
 	}

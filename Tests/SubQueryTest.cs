@@ -1,30 +1,25 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
+using Xunit;
 
 namespace Tests
 {
-	[TestFixture]
-    public class SubQueryTest
+    public class SubQueryTest : IDisposable
 	{
-		private ChinookDatabase _db;
+		private readonly ChinookDatabase _db;
 
-		[OneTimeSetUp]
-		public void TestSetUp()
+		public SubQueryTest()
 		{
 			_db = new ChinookDatabase();
 		}
 
-		[OneTimeTearDown]
-		public void TestTearDown()
+		public void Dispose()
 		{
 			_db.Dispose();
 		}
 
 
-		[Test]
+		[Fact]
 		public void TestSimpleSubQuery()
 		{
 			const string querySQL =
@@ -39,11 +34,11 @@ namespace Tests
 				});
 				foreach (var item in result)
 				{
-					Assert.IsTrue(query.Step());
-					Assert.AreEqual(query.GetText(0), item.Playlist);
-					Assert.AreEqual(query.GetInt(1), item.TrackCount);
+					Assert.True(query.Step());
+					Assert.Equal(query.GetText(0), item.Playlist);
+					Assert.Equal(query.GetInt(1), item.TrackCount);
 				}
-				Assert.IsFalse(query.Step());
+				Assert.False(query.Step());
 			}
 		}
 	}

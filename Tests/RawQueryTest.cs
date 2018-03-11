@@ -1,15 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
+using Xunit;
 
 namespace Tests
 {
-	[TestFixture]
-    public class RawQueryTest
+    public class RawQueryTest : IDisposable
 	{
-		private ChinookDatabase _db;
+		private readonly ChinookDatabase _db;
 		private class TestClass
 		{
 			public long TestLong { get; set; }
@@ -17,39 +14,37 @@ namespace Tests
 			public double TestReal { get; set; }
 		}
 
-		[OneTimeSetUp]
-		public void TestSetUp()
+		public RawQueryTest()
 		{
 			_db = new ChinookDatabase();
 		}
 
-		[OneTimeTearDown]
-		public void TestTearDown()
+		public void Dispose()
 		{
 			_db.Dispose();
 		}
 
-		[Test]
+		[Fact]
 		public void TestQueryDirect()
 		{
 			var result = _db.Query<TestClass>("SELECT 3 AS TestLong, 'Hey!' AS TestString, 5.6 AS TestReal").Single();
 
-			Assert.AreEqual(3, result.TestLong);
-			Assert.AreEqual("Hey!", result.TestString);
-			Assert.AreEqual(5.6, result.TestReal);
+			Assert.Equal(3, result.TestLong);
+			Assert.Equal("Hey!", result.TestString);
+			Assert.Equal(5.6, result.TestReal);
 		}
 
-		[Test]
+		[Fact]
 		public void TestQueryDynamic()
 		{
 			var result = _db.Query("SELECT 3 AS TestLong, 'Hey!' AS TestString, 5.6 AS TestReal").Single();
 
-			Assert.AreEqual(3, result.TestLong);
-			Assert.AreEqual("Hey!", result.TestString);
-			Assert.AreEqual(5.6, result.TestReal);
+			Assert.Equal(3, result.TestLong);
+			Assert.Equal("Hey!", result.TestString);
+			Assert.Equal(5.6, result.TestReal);
 		}
 
-		[Test]
+		[Fact]
 		public void TestQueryCustom()
 		{
 			var result = _db.Query("SELECT 3 AS TestLong, 'Hey!' AS TestString, 5.6 AS TestReal", reader => new TestClass
@@ -60,12 +55,12 @@ namespace Tests
 			})
 			.Single();
 
-			Assert.AreEqual(3, result.TestLong);
-			Assert.AreEqual("Hey!", result.TestString);
-			Assert.AreEqual(5.6, result.TestReal);
+			Assert.Equal(3, result.TestLong);
+			Assert.Equal("Hey!", result.TestString);
+			Assert.Equal(5.6, result.TestReal);
 		}
 
-		[Test]
+		[Fact]
 		public void TestPragmaTableQuery()
 		{
 			foreach (var table in _db.SQLiteMaster.Where(dbo => dbo.Type == "table"))
@@ -87,7 +82,7 @@ namespace Tests
 			}
 		}
 
-		[Test]
+		[Fact]
 		public void TestPragmaIndexQuery()
 		{
 			foreach (var table in _db.SQLiteMaster.Where(dbo => dbo.Type == "table"))

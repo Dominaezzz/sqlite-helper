@@ -1,104 +1,114 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
 using SQLite.Net;
 using SQLite.Net.Attributes;
+using Xunit;
 
 namespace Tests
 {
-	[TestFixture(Category = "Where")]
-    public class WhereTest
+	[Trait("Category", "Where")]
+    public class WhereTest : IDisposable
     {
 		private const int RowCount = 100;
 
-	    private SQLiteDb _db;
+	    private readonly SQLiteDb _db;
 
-		[OneTimeSetUp]
-	    public void TestSetUp()
+	    public WhereTest()
 	    {
 		    _db = new SQLiteDb();
 		    _db.DataTable.Insert(Enumerable.Range(0, RowCount).Select(i => new Data { TextValue = $"Some Text {i}" }));
 	    }
 
-		[OneTimeTearDown]
-	    public void TestTearDown()
+	    public void Dispose()
 	    {
 		    _db.Dispose();
 	    }
 
 
-		[Test]
-		[TestCase(10, ExpectedResult = 1)]
-		[TestCase(50, ExpectedResult = 1)]
-		[TestCase(90, ExpectedResult = 1)]
-		public int TestEqual(int value)
+		[Theory]
+		[InlineData(10)]
+		[InlineData(50)]
+		[InlineData(90)]
+		public void TestEqual(int value)
 		{
-			return _db.DataTable
+			int expected = _db.ExecuteScalar<int>("SELECT COUNT(*) FROM DataTable WHERE Id == ?", value);
+			int actual = _db.DataTable
 				.Where(d => d.Id == value)
 				.ToList()
 				.Count;
+			Assert.Equal(expected, actual);
 		}
 
-		[Test]
-		[TestCase(10, ExpectedResult = 99)]
-		[TestCase(50, ExpectedResult = 99)]
-		[TestCase(90, ExpectedResult = 99)]
-		public int TestNotEqual(int value)
+		[Theory]
+		[InlineData(10)]
+		[InlineData(50)]
+		[InlineData(90)]
+		public void TestNotEqual(int value)
 		{
-			return _db.DataTable
+			int expected = _db.ExecuteScalar<int>("SELECT COUNT(*) FROM DataTable WHERE Id != ?", value);
+			int actual = _db.DataTable
 				.Where(d => d.Id != value)
 				.ToList()
 				.Count;
+			Assert.Equal(expected, actual);
 		}
 
-	    [Test]
-	    [TestCase(10, ExpectedResult = 91)]
-	    [TestCase(50, ExpectedResult = 51)]
-	    [TestCase(90, ExpectedResult = 11)]
-		public int TestGreaterThanOrEqualTo(int value)
+	    [Theory]
+	    [InlineData(10)]
+	    [InlineData(50)]
+	    [InlineData(90)]
+		public void TestGreaterThanOrEqualTo(int value)
 	    {
-		    return _db.DataTable
+			int expected = _db.ExecuteScalar<int>("SELECT COUNT(*) FROM DataTable WHERE Id >= ?", value);
+			int actual = _db.DataTable
 			    .Where(d => d.Id >= value)
 			    .ToList()
 			    .Count;
+			Assert.Equal(expected, actual);
 		}
 
-	    [Test]
-	    [TestCase(10, ExpectedResult = 90)]
-	    [TestCase(50, ExpectedResult = 50)]
-	    [TestCase(90, ExpectedResult = 10)]
-		public int TestGreaterThan(int value)
+	    [Theory]
+	    [InlineData(10)]
+	    [InlineData(50)]
+	    [InlineData(90)]
+		public void TestGreaterThan(int value)
 	    {
-		    return _db.DataTable
+			int expected = _db.ExecuteScalar<int>("SELECT COUNT(*) FROM DataTable WHERE Id > ?", value);
+			int actual = _db.DataTable
 			    .Where(d => d.Id > value)
 			    .ToList()
 			    .Count;
+			Assert.Equal(expected, actual);
 		}
 
-	    [Test]
-	    [TestCase(10, ExpectedResult = 10)]
-	    [TestCase(50, ExpectedResult = 50)]
-	    [TestCase(90, ExpectedResult = 90)]
-		public int TestLessThanOrEqualTo(int value)
+	    [Theory]
+	    [InlineData(10)]
+	    [InlineData(50)]
+	    [InlineData(90)]
+		public void TestLessThanOrEqualTo(int value)
 	    {
-		    return _db.DataTable
+			int expected = _db.ExecuteScalar<int>("SELECT COUNT(*) FROM DataTable WHERE Id <= ?", value);
+			int actual = _db.DataTable
 			    .Where(d => d.Id <= value)
 			    .ToList()
 			    .Count;
+			
+			Assert.Equal(expected, actual);
 		}
 
-	    [Test]
-	    [TestCase(10, ExpectedResult =  9)]
-	    [TestCase(50, ExpectedResult = 49)]
-	    [TestCase(90, ExpectedResult = 89)]
-		public int TestLessThan(int value)
-	    {
-		    return _db.DataTable
+	    [Theory]
+	    [InlineData(10)]
+	    [InlineData(50)]
+	    [InlineData(90)]
+		public void TestLessThan(int value)
+		{
+			int expected = _db.ExecuteScalar<int>("SELECT COUNT(*) FROM DataTable WHERE Id < ?", value);
+			int actual = _db.DataTable
 			    .Where(d => d.Id < value)
 			    .ToList()
 			    .Count;
+			
+			Assert.Equal(expected, actual);
 	    }
 
 		[Table("DataTable")]

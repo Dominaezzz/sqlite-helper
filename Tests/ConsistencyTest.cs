@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using SQLite.Net;
 using SQLite.Net.Attributes;
+using Xunit;
 
 namespace Tests
 {
-	[TestFixture]
     public class ConsistencyTest
     {
 	    private static void SimpleTest<T>(T value)
@@ -17,11 +13,11 @@ namespace Tests
 			{
 				db.DataTable.Insert(new Data<T> { Value = value });
 
-				Assert.AreEqual(value, db.DataTable.Single().Value);
+				Assert.Equal(value, db.DataTable.Single().Value);
 			}
 		}
 
-	    [Test]
+	    [Fact]
 	    public void TestBool()
 	    {
 		    SimpleTest<bool>(true);
@@ -31,7 +27,7 @@ namespace Tests
 		    SimpleTest<bool?>(null);
 		}
 
-	    [Test]
+	    [Fact]
 	    public void TestChar()
 	    {
 		    SimpleTest<char>('A');
@@ -39,7 +35,7 @@ namespace Tests
 		    SimpleTest<char?>(null);
 	    }
 
-		[Test]
+		[Fact]
 	    public void TestByte()
 	    {
 		    SimpleTest<byte>(10);
@@ -47,7 +43,7 @@ namespace Tests
 		    SimpleTest<byte?>(null);
 		}
 
-	    [Test]
+	    [Fact]
 	    public void TestSByte()
 	    {
 		    SimpleTest<sbyte>(10);
@@ -55,7 +51,7 @@ namespace Tests
 		    SimpleTest<sbyte?>(null);
 		}
 
-	    [Test]
+	    [Fact]
 	    public void TestInt16()
 	    {
 			SimpleTest<short>(10);
@@ -63,7 +59,7 @@ namespace Tests
 		    SimpleTest<short?>(null);
 		}
 
-	    [Test]
+	    [Fact]
 	    public void TestUInt16()
 	    {
 		    SimpleTest<ushort>(10);
@@ -71,7 +67,7 @@ namespace Tests
 		    SimpleTest<ushort?>(null);
 		}
 
-	    [Test]
+	    [Fact]
 	    public void TestInt32()
 	    {
 		    SimpleTest<int>(10);
@@ -79,7 +75,7 @@ namespace Tests
 		    SimpleTest<int?>(null);
 		}
 
-	    [Test]
+	    [Fact]
 	    public void TestUInt32()
 	    {
 		    SimpleTest<uint>(10);
@@ -87,7 +83,7 @@ namespace Tests
 		    SimpleTest<uint?>(null);
 		}
 
-	    [Test]
+	    [Fact]
 	    public void TestInt64()
 	    {
 		    SimpleTest<long>(10);
@@ -95,7 +91,7 @@ namespace Tests
 		    SimpleTest<long?>(null);
 		}
 
-	    [Test]
+	    [Fact]
 	    public void TestUInt64()
 	    {
 		    SimpleTest<ulong>(10);
@@ -103,7 +99,7 @@ namespace Tests
 		    SimpleTest<ulong?>(null);
 		}
 
-	    [Test]
+	    [Fact]
 	    public void TestFloat()
 	    {
 		    SimpleTest<float>(45.783F);
@@ -111,7 +107,7 @@ namespace Tests
 		    SimpleTest<float?>(null);
 		}
 
-	    [Test]
+	    [Fact]
 	    public void TestDouble()
 	    {
 		    SimpleTest<double>(16.5532134D);
@@ -119,7 +115,7 @@ namespace Tests
 		    SimpleTest<double?>(null);
 		}
 
-	    [Test]
+	    [Fact]
 	    public void TestDecimal()
 	    {
 		    SimpleTest<decimal>(123.456789M);
@@ -127,7 +123,7 @@ namespace Tests
 		    SimpleTest<decimal?>(null);
 		}
 
-	    [Test]
+	    [Fact]
 	    public void TestByteArray()
 	    {
 		    SimpleTest<byte[]>(new byte[] { 0, 12, 45, 2, 78 });
@@ -136,8 +132,8 @@ namespace Tests
 		    SimpleTest<byte[]>(null);
 		}
 
-	    [Test]
-		[Category("Strings")]
+	    [Fact]
+		[Trait("Category", "Strings")]
 	    public void TestString()
 	    {
 		    SimpleTest<string>("Test String");
@@ -145,8 +141,8 @@ namespace Tests
 		    SimpleTest<string>(null);
 		}
 
-	    [Test]
-		[Category("TimeSpan")]
+	    [Fact]
+		[Trait("Category", "TimeSpan")]
 	    public void TestTimeSpan()
 	    {
 		    SimpleTest<TimeSpan>(TimeSpan.FromMilliseconds(123459123));
@@ -154,8 +150,8 @@ namespace Tests
 		    SimpleTest<TimeSpan?>(null);
 		}
 
-	    [Test]
-		[Category("DateTime")]
+	    [Fact]
+		[Trait("Category", "DateTime")]
 	    public void TestDateTime()
 	    {
 			DateTime now = DateTime.Now;
@@ -166,7 +162,7 @@ namespace Tests
 		    SimpleTest<DateTime?>(null);
 		}
 
-	    [Test]
+	    [Fact]
 	    public void TestDateTimeOffset()
 		{
 			DateTimeOffset now = DateTimeOffset.Now;
@@ -177,7 +173,7 @@ namespace Tests
 			SimpleTest<DateTimeOffset?>(null);
 		}
 
-	    [Test]
+	    [Fact]
 	    public void TestGuid()
 	    {
 		    SimpleTest<Guid>(Guid.NewGuid());
@@ -185,7 +181,7 @@ namespace Tests
 		    SimpleTest<Guid?>(null);
 		}
 
-	    [Test]
+	    [Fact]
 	    public void TestEnum()
 	    {
 		    SimpleTest<RegularEnum>(RegularEnum.Value1);

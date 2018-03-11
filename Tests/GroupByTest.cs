@@ -1,32 +1,27 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using SQLite.Net;
+using Xunit;
 
 namespace Tests
 {
-	[TestFixture(Category = "GroupBy")]
-    public class GroupByTest
+	[Trait("Category", "GroupBy")]
+    public class GroupByTest : IDisposable
     {
-	    private ChinookDatabase _db;
+	    private readonly ChinookDatabase _db;
 
-	    [OneTimeSetUp]
-	    public void TestSetUp()
+	    public GroupByTest()
 	    {
 		    _db = new ChinookDatabase();
 	    }
 
-	    [OneTimeTearDown]
-	    public void TestTearDown()
+	    public void Dispose()
 	    {
 		    _db.Dispose();
 	    }
 		
 
-		[Test]
-		[Category("SubIteration")]
+		[Fact]
+		[Trait("Category", "SubIteration")]
 	    public void TestGroupBy()
 	    {
 		    using (var query = _db.ExecuteQuery("SELECT AlbumId FROM Track GROUP BY AlbumId"))
@@ -34,26 +29,26 @@ namespace Tests
 			    var result = _db.Tracks.GroupBy(t => t.AlbumId);
 			    foreach (var item in result)
 			    {
-				    Assert.IsTrue(query.Step());
+				    Assert.True(query.Step());
 				    int? expected = query.IsNull(0) ? (int?)null : query.GetInt(0);
-				    Assert.AreEqual(expected, item.Key);
+				    Assert.Equal(expected, item.Key);
 
 				    using (var subQuery = _db.ExecuteQuery("SELECT TrackId FROM Track WHERE AlbumId IS ?", item.Key))
 					{
 						foreach (var subItem in item)
 						{
-							Assert.IsTrue(subQuery.Step());
-							Assert.AreEqual(subQuery.GetInt(0), subItem.TrackId);
+							Assert.True(subQuery.Step());
+							Assert.Equal(subQuery.GetInt(0), subItem.TrackId);
 						}
-						Assert.IsFalse(subQuery.Step());
+						Assert.False(subQuery.Step());
 					}
 			    }
-			    Assert.IsFalse(query.Step());
+			    Assert.False(query.Step());
 		    }
 		}
 
-	    [Test]
-	    [Category("SubIteration")]
+	    [Fact]
+	    [Trait("Category", "SubIteration")]
 		public void TestGroupByCompoundKey()
 	    {
 		    using (var query = _db.ExecuteQuery("SELECT MediaTypeId, UnitPrice FROM Track GROUP BY MediaTypeId, UnitPrice"))
@@ -61,27 +56,27 @@ namespace Tests
 				var result = _db.Tracks.GroupBy(t => new { t.MediaTypeId, t.UnitPrice });
 			    foreach (var item in result)
 			    {
-					Assert.IsTrue(query.Step());
-				    Assert.AreEqual(query.GetInt(0), item.Key.MediaTypeId);
-				    Assert.AreEqual((decimal)query.GetDouble(1), item.Key.UnitPrice);
+					Assert.True(query.Step());
+				    Assert.Equal(query.GetInt(0), item.Key.MediaTypeId);
+				    Assert.Equal((decimal)query.GetDouble(1), item.Key.UnitPrice);
 
 				    const string subQuerySQL = "SELECT TrackId FROM Track WHERE MediaTypeId IS ? AND UnitPrice IS ?";
 					using (var subQuery = _db.ExecuteQuery(subQuerySQL, item.Key.MediaTypeId, item.Key.UnitPrice))
 					{
 						foreach (var subItem in item)
 						{
-							Assert.IsTrue(subQuery.Step());
-							Assert.AreEqual(subQuery.GetInt(0), subItem.TrackId);
+							Assert.True(subQuery.Step());
+							Assert.Equal(subQuery.GetInt(0), subItem.TrackId);
 						}
-						Assert.IsFalse(subQuery.Step());
+						Assert.False(subQuery.Step());
 					}
 			    }
-			    Assert.IsFalse(query.Step());
+			    Assert.False(query.Step());
 		    }
 		}
 
-		[Test]
-		[Category("Aggregate")]
+		[Fact]
+		[Trait("Category", "Aggregate")]
 		public void TestGroupByWithAggregate()
 	    {
 		    using (var query = _db.ExecuteQuery("SELECT SUM(UnitPrice) FROM Track GROUP BY AlbumId"))
@@ -89,15 +84,15 @@ namespace Tests
 				var result = _db.Tracks.GroupBy(t => t.AlbumId, (id, tracks) => tracks.Sum(t => t.UnitPrice));
 			    foreach (var item in result)
 			    {
-				    Assert.IsTrue(query.Step());
-				    Assert.AreEqual((decimal)query.GetDouble(0), item);
+				    Assert.True(query.Step());
+				    Assert.Equal((decimal)query.GetDouble(0), item);
 			    }
-			    Assert.IsFalse(query.Step());
+			    Assert.False(query.Step());
 		    }
 		}
 
-		[Test]
-		[Category("Aggregate")]
+		[Fact]
+		[Trait("Category", "Aggregate")]
 		public void TestGroupByWithAggregates()
 		{
 			using (var query = _db.ExecuteQuery("SELECT AlbumId, SUM(UnitPrice), COUNT(*) FROM Track GROUP BY AlbumId"))
@@ -110,17 +105,17 @@ namespace Tests
 				});
 				foreach (var item in result)
 				{
-					Assert.IsTrue(query.Step());
+					Assert.True(query.Step());
 					int? expected = query.IsNull(0) ? (int?)null : query.GetInt(0);
-					Assert.AreEqual(expected, item.AlbumId);
-					Assert.AreEqual((decimal)query.GetDouble(1), item.TotalPrice);
-					Assert.AreEqual(query.GetInt(2), item.Count);
+					Assert.Equal(expected, item.AlbumId);
+					Assert.Equal((decimal)query.GetDouble(1), item.TotalPrice);
+					Assert.Equal(query.GetInt(2), item.Count);
 				}
-				Assert.IsFalse(query.Step());
+				Assert.False(query.Step());
 			}
 		}
 
-	    [Test]
+	    [Fact]
 	    public void TestGroupByWithSelect()
 	    {
 		    using (var query = _db.ExecuteQuery("SELECT AlbumId FROM Track GROUP BY AlbumId"))
@@ -128,16 +123,16 @@ namespace Tests
 				var result = _db.Tracks.GroupBy(t => t.AlbumId, (albumId, tracks) => albumId);
 			    foreach (var item in result)
 			    {
-				    Assert.IsTrue(query.Step());
+				    Assert.True(query.Step());
 				    int? expected = query.IsNull(0) ? (int?)null : query.GetInt(0);
-				    Assert.AreEqual(expected, item);
+				    Assert.Equal(expected, item);
 			    }
-			    Assert.IsFalse(query.Step());
+			    Assert.False(query.Step());
 		    }
 		}
 
-	    [Test]
-	    [Category("Aggregate")]
+	    [Fact]
+	    [Trait("Category", "Aggregate")]
 		public void TestGroupByThenSelectAggregate()
 	    {
 		    using (var query = _db.ExecuteQuery("SELECT SUM(UnitPrice) FROM Track GROUP BY AlbumId"))
@@ -145,15 +140,15 @@ namespace Tests
 				var result = _db.Tracks.GroupBy(t => t.AlbumId).Select(g => g.Sum(t => t.UnitPrice));
 			    foreach (var item in result)
 			    {
-				    Assert.IsTrue(query.Step());
-				    Assert.AreEqual((decimal)query.GetDouble(0), item);
+				    Assert.True(query.Step());
+				    Assert.Equal((decimal)query.GetDouble(0), item);
 			    }
-			    Assert.IsFalse(query.Step());
+			    Assert.False(query.Step());
 		    }
 		}
 
-	    [Test]
-	    [Category("Aggregate")]
+	    [Fact]
+	    [Trait("Category", "Aggregate")]
 		public void TestGroupByWithSelectedAggregates()
 	    {
 		    using (var query = _db.ExecuteQuery("SELECT AlbumId, SUM(UnitPrice), COUNT(*) FROM Track GROUP BY AlbumId"))
@@ -166,18 +161,18 @@ namespace Tests
 			    });
 				foreach (var item in result)
 			    {
-				    Assert.IsTrue(query.Step());
+				    Assert.True(query.Step());
 				    int? expected = query.IsNull(0) ? (int?)null : query.GetInt(0);
-				    Assert.AreEqual(expected, item.AlbumId);
-				    Assert.AreEqual((decimal)query.GetDouble(1), item.TotalPrice);
-				    Assert.AreEqual(query.GetInt(2), item.Count);
+				    Assert.Equal(expected, item.AlbumId);
+				    Assert.Equal((decimal)query.GetDouble(1), item.TotalPrice);
+				    Assert.Equal(query.GetInt(2), item.Count);
 			    }
-			    Assert.IsFalse(query.Step());
+			    Assert.False(query.Step());
 		    }
 		}
 
-	    [Test]
-	    [Category("Aggregate")]
+	    [Fact]
+	    [Trait("Category", "Aggregate")]
 		public void TestGroupByWithHavingAndSelectedAggregates()
 	    {
 		    const string querySQL =
@@ -195,13 +190,13 @@ namespace Tests
 					});
 				foreach (var item in result)
 			    {
-				    Assert.IsTrue(query.Step());
+				    Assert.True(query.Step());
 				    int? expected = query.IsNull(0) ? (int?)null : query.GetInt(0);
-				    Assert.AreEqual(expected, item.AlbumId);
-				    Assert.AreEqual((decimal)query.GetDouble(1), item.TotalPrice);
-				    Assert.AreEqual(query.GetInt(2), item.Count);
+				    Assert.Equal(expected, item.AlbumId);
+				    Assert.Equal((decimal)query.GetDouble(1), item.TotalPrice);
+				    Assert.Equal(query.GetInt(2), item.Count);
 			    }
-			    Assert.IsFalse(query.Step());
+			    Assert.False(query.Step());
 		    }
 		}
 	}

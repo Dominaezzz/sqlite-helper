@@ -1,130 +1,126 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
+using Xunit;
 
 namespace Tests
 {
-	[TestFixture(Category = "Strings")]
-    public class StringTest
+	[Trait("Category", "Strings")]
+    public class StringTest : IDisposable
 	{
-		private SQLiteDb<string> _db;
+		private readonly SQLiteDb<string> _db;
 		private const string TestString = "ABCabc123";
 		private const string TestStringLower = "abcabc123";
 		private const string TestStringUpper = "ABCABC123";
 
-		[OneTimeSetUp]
-		public void TestSetUp()
+		public StringTest()
 		{
 			_db = new SQLiteDb<string>();
 			_db.DataTable.Insert(new Data<string> { Value = TestString });
 		}
 
-		[OneTimeTearDown]
-		public void TestTearDown()
+		public void Dispose()
 		{
 			_db.Dispose();
 		}
 
 
-		[Test]
+		[Fact]
 		public void TestLength()
 		{
-			Assert.AreEqual(TestString.Length, _db.DataTable.Select(d => d.Value.Length).Single());
+			Assert.Equal(TestString.Length, _db.DataTable.Select(d => d.Value.Length).Single());
 		}
 
-		[Test]
+		[Fact]
 		public void TestToLower()
 		{
-			Assert.AreEqual(TestString.ToLower(), _db.DataTable.Select(d => d.Value.ToLower()).Single());
+			Assert.Equal(TestString.ToLower(), _db.DataTable.Select(d => d.Value.ToLower()).Single());
 		}
 
-		[Test]
+		[Fact]
 		public void TestToUpper()
 		{
-			Assert.AreEqual(TestString.ToUpper(), _db.DataTable.Select(d => d.Value.ToUpper()).Single());
+			Assert.Equal(TestString.ToUpper(), _db.DataTable.Select(d => d.Value.ToUpper()).Single());
 		}
 
-		[Test]
+		[Fact]
 		public void TestTrim()
 		{
-			Assert.AreEqual(TestString.Trim(), _db.DataTable.Select(d => d.Value.Trim()).Single());
+			Assert.Equal(TestString.Trim(), _db.DataTable.Select(d => d.Value.Trim()).Single());
 		}
 
-		[Test]
+		[Fact]
 		public void TestTrimStart()
 		{
-			Assert.AreEqual(TestString.TrimStart(), _db.DataTable.Select(d => d.Value.TrimEnd()).Single());
+			Assert.Equal(TestString.TrimStart(), _db.DataTable.Select(d => d.Value.TrimEnd()).Single());
 		}
 
-		[Test]
+		[Fact]
 		public void TestTrimEnd()
 		{
-			Assert.AreEqual(TestString.TrimEnd(), _db.DataTable.Select(d => d.Value.TrimEnd()).Single());
+			Assert.Equal(TestString.TrimEnd(), _db.DataTable.Select(d => d.Value.TrimEnd()).Single());
 		}
 
-		[Test]
-		[TestCase(TestString)]
-		[TestCase(TestStringLower)]
-		[TestCase(TestStringUpper)]
+		[Theory]
+		[InlineData(TestString)]
+		[InlineData(TestStringLower)]
+		[InlineData(TestStringUpper)]
 		public void TestEquals(string value)
 		{
-			Assert.AreEqual(TestString == value, _db.DataTable.Select(d => d.Value == value).Single());
+			Assert.Equal(TestString == value, _db.DataTable.Select(d => d.Value == value).Single());
 		}
 
-		[Test]
-		[TestCase(TestString)]
-		[TestCase(TestStringLower)]
-		[TestCase(TestStringUpper)]
+		[Theory]
+		[InlineData(TestString)]
+		[InlineData(TestStringLower)]
+		[InlineData(TestStringUpper)]
 		public void TestNotEquals(string value)
 		{
-			Assert.AreEqual(TestString != value, _db.DataTable.Select(d => d.Value != value).Single());
+			Assert.Equal(TestString != value, _db.DataTable.Select(d => d.Value != value).Single());
 		}
 
-		[Test]
-		[TestCase(TestString)]
-		[TestCase(TestStringLower)]
-		[TestCase(TestStringUpper)]
+		[Theory]
+		[InlineData(TestString)]
+		[InlineData(TestStringLower)]
+		[InlineData(TestStringUpper)]
 		public void TestStartsWith(string value)
 		{
-			Assert.AreEqual(TestString.StartsWith(value), _db.DataTable.Select(d => d.Value.StartsWith(value)).Single());
+			Assert.Equal(TestString.StartsWith(value), _db.DataTable.Select(d => d.Value.StartsWith(value)).Single());
 		}
 
-		[Test]
-		[TestCase(TestString)]
-		[TestCase(TestStringLower)]
-		[TestCase(TestStringUpper)]
+		[Theory]
+		[InlineData(TestString)]
+		[InlineData(TestStringLower)]
+		[InlineData(TestStringUpper)]
 		public void TestEndsWith(string value)
 		{
-			Assert.AreEqual(TestString.EndsWith(value), _db.DataTable.Select(d => d.Value.EndsWith(value)).Single());
+			Assert.Equal(TestString.EndsWith(value), _db.DataTable.Select(d => d.Value.EndsWith(value)).Single());
 		}
 
-		[Test]
-		[TestCase(TestString)]
-		[TestCase(TestStringLower)]
-		[TestCase(TestStringUpper)]
+		[Theory]
+		[InlineData(TestString)]
+		[InlineData(TestStringLower)]
+		[InlineData(TestStringUpper)]
 		public void TestContains(string value)
 		{
-			Assert.AreEqual(TestString.Contains(value), _db.DataTable.Select(d => d.Value.Contains(value)).Single());
+			Assert.Equal(TestString.Contains(value), _db.DataTable.Select(d => d.Value.Contains(value)).Single());
 		}
 
-		[Test]
-		[TestCase(TestString)]
-		[TestCase(TestStringLower)]
-		[TestCase(TestStringUpper)]
+		[Theory]
+		[InlineData(TestString)]
+		[InlineData(TestStringLower)]
+		[InlineData(TestStringUpper)]
 		public void TestReplace(string value)
 		{
-			Assert.AreEqual(TestString == value, _db.DataTable.Select(d => d.Value == value).Single());
+			Assert.Equal(TestString == value, _db.DataTable.Select(d => d.Value == value).Single());
 		}
 
-		[Test]
-		[TestCase(0)]
-		[TestCase(3)]
-		[TestCase(6)]
+		[Theory]
+		[InlineData(0)]
+		[InlineData(3)]
+		[InlineData(6)]
 		public void TestRemove(int index)
 		{
-			Assert.AreEqual(TestString.Remove(index), _db.DataTable.Select(d => d.Value.Remove(index)).Single());
+			Assert.Equal(TestString.Remove(index), _db.DataTable.Select(d => d.Value.Remove(index)).Single());
 		}
 	}
 }

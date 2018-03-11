@@ -1,185 +1,181 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using NUnit.Framework;
+using Xunit;
 
 namespace Tests
 {
-	[TestFixture(Category = "TimeSpan")]
-	public class TimeSpanTest
+	[Trait("Category", "TimeSpan")]
+	public class TimeSpanTest : IDisposable
 	{
-		private SQLiteDb<TimeSpan> _db;
+		private readonly SQLiteDb<TimeSpan> _db;
 		private readonly TimeSpan _testTimeSpan = new TimeSpan(10, 2, 30, 4, 567).Add(TimeSpan.FromTicks(100));
 		private readonly TimeSpan _testTimeSpan2 = new TimeSpan(5, 6, 20, 9, 713).Add(TimeSpan.FromTicks(300));
 
-		[OneTimeSetUp]
-		public void TestSetUp()
+		public TimeSpanTest()
 		{
 			_db = new SQLiteDb<TimeSpan>();
 			_db.DataTable.Insert(new Data<TimeSpan> { Value = _testTimeSpan });
 		}
 
-		[OneTimeTearDown]
-		public void TestTearDown()
+		public void Dispose()
 		{
 			_db.Dispose();
 		}
 
 
-		[Test]
+		[Fact]
 		public void TestTotalDays()
 		{
-			Assert.AreEqual(_testTimeSpan.TotalDays, _db.DataTable.Select(d => d.Value.TotalDays).Single());
+			Assert.Equal(_testTimeSpan.TotalDays, _db.DataTable.Select(d => d.Value.TotalDays).Single());
 		}
 
-		[Test]
+		[Fact]
 		public void TestTotalHours()
 		{
-			Assert.AreEqual(_testTimeSpan.TotalHours, _db.DataTable.Select(d => d.Value.TotalHours).Single(), 0.0000000000001);
+			Assert.Equal(_testTimeSpan.TotalHours, _db.DataTable.Select(d => d.Value.TotalHours).Single(), 10);
 		}
 
-		[Test]
+		[Fact]
 		public void TestTotalMinutes()
 		{
-			Assert.AreEqual(_testTimeSpan.TotalMinutes, _db.DataTable.Select(d => d.Value.TotalMinutes).Single());
+			Assert.Equal(_testTimeSpan.TotalMinutes, _db.DataTable.Select(d => d.Value.TotalMinutes).Single());
 		}
 
-		[Test]
+		[Fact]
 		public void TestTotalSeconds()
 		{
-			Assert.AreEqual(_testTimeSpan.TotalSeconds, _db.DataTable.Select(d => d.Value.TotalSeconds).Single(), 0.0001);
+			Assert.Equal(_testTimeSpan.TotalSeconds, _db.DataTable.Select(d => d.Value.TotalSeconds).Single(), 10);
 		}
 
-		[Test]
+		[Fact]
 		public void TestTotalMilliSeconds()
 		{
-			Assert.AreEqual(_testTimeSpan.TotalMilliseconds, _db.DataTable.Select(d => d.Value.TotalMilliseconds).Single());
+			Assert.Equal(_testTimeSpan.TotalMilliseconds, _db.DataTable.Select(d => d.Value.TotalMilliseconds).Single());
 		}
 
 
-		[Test]
+		[Fact]
 		public void TestDays()
 		{
-			Assert.AreEqual(_testTimeSpan.Days, _db.DataTable.Select(d => d.Value.Days).Single());
+			Assert.Equal(_testTimeSpan.Days, _db.DataTable.Select(d => d.Value.Days).Single());
 		}
 
-		[Test]
+		[Fact]
 		public void TestHours()
 		{
-			Assert.AreEqual(_testTimeSpan.Hours, _db.DataTable.Select(d => d.Value.Hours).Single());
+			Assert.Equal(_testTimeSpan.Hours, _db.DataTable.Select(d => d.Value.Hours).Single());
 		}
 
-		[Test]
+		[Fact]
 		public void TestMinutes()
 		{
-			Assert.AreEqual(_testTimeSpan.Minutes, _db.DataTable.Select(d => d.Value.Minutes).Single());
+			Assert.Equal(_testTimeSpan.Minutes, _db.DataTable.Select(d => d.Value.Minutes).Single());
 		}
 
-		[Test]
+		[Fact]
 		public void TestSeconds()
 		{
-			Assert.AreEqual(_testTimeSpan.Seconds, _db.DataTable.Select(d => d.Value.Seconds).Single());
+			Assert.Equal(_testTimeSpan.Seconds, _db.DataTable.Select(d => d.Value.Seconds).Single());
 		}
 
-		[Test]
+		[Fact]
 		public void TestMilliSeconds()
 		{
-			Assert.AreEqual(_testTimeSpan.Milliseconds, _db.DataTable.Select(d => d.Value.Milliseconds).Single());
+			Assert.Equal(_testTimeSpan.Milliseconds, _db.DataTable.Select(d => d.Value.Milliseconds).Single());
 		}
 
-		[Test]
+		[Fact]
 		public void TestTicks()
 		{
-			Assert.AreEqual(_testTimeSpan.Ticks, _db.DataTable.Select(d => d.Value.Ticks).Single());
+			Assert.Equal(_testTimeSpan.Ticks, _db.DataTable.Select(d => d.Value.Ticks).Single());
 		}
 
 
-		[Test]
-		[TestCase(13.034)]
+		[Theory]
+		[InlineData(13.034)]
 		public void TestFromDays(double value)
 		{
-			Assert.AreEqual(
+			Assert.Equal(
 				TimeSpan.FromDays(value), _db.DataTable.Select(d => TimeSpan.FromDays(d.Id * value)).Single()
 			);
 		}
 
-		[Test]
-		[TestCase(13.034)]
+		[Theory]
+		[InlineData(13.034)]
 		public void TestFromHours(double value)
 		{
-			Assert.AreEqual(
+			Assert.Equal(
 				TimeSpan.FromHours(value), _db.DataTable.Select(d => TimeSpan.FromHours(d.Id * value)).Single()
 			);
 		}
 
-		[Test]
-		[TestCase(13.034)]
+		[Theory]
+		[InlineData(13.034)]
 		public void TestFromMinutes(double value)
 		{
-			Assert.AreEqual(
+			Assert.Equal(
 				TimeSpan.FromMinutes(value), _db.DataTable.Select(d => TimeSpan.FromMinutes(d.Id * value)).Single()
 			);
 		}
 
-		[Test]
-		[TestCase(13.034)]
+		[Theory]
+		[InlineData(13.034)]
 		public void TestFromSeconds(double value)
 		{
-			Assert.AreEqual(
+			Assert.Equal(
 				TimeSpan.FromSeconds(value), _db.DataTable.Select(d => TimeSpan.FromSeconds(d.Id * value)).Single()
 			);
 		}
 
-		[Test]
-		[TestCase(13.0)]
+		[Theory]
+		[InlineData(13.0)]
 		public void TestFromMilliSeconds(double value)
 		{
-			Assert.AreEqual(
+			Assert.Equal(
 				TimeSpan.FromMilliseconds(value),
 				_db.DataTable.Select(d => TimeSpan.FromMilliseconds(d.Id * value)).Single()
 			);
 		}
 
-		[Test]
-		[TestCase(123456789)]
+		[Theory]
+		[InlineData(123456789)]
 		public void TestFromTicks(long value)
 		{
-			Assert.AreEqual(
+			Assert.Equal(
 				TimeSpan.FromTicks(value),
 				_db.DataTable.Select(d => TimeSpan.FromTicks(d.Id * value)).Single()
 			);
 		}
 
 
-		[Test]
+		[Fact]
 		public void TestAdd()
 		{
-			Assert.AreEqual(
+			Assert.Equal(
 				_testTimeSpan.Add(_testTimeSpan2),
 				_db.DataTable.Select(d => d.Value.Add(_testTimeSpan2)).Single()
 			);
 		}
 
-		[Test]
+		[Fact]
 		public void TestSubtract()
 		{
-			Assert.AreEqual(
+			Assert.Equal(
 				_testTimeSpan.Subtract(_testTimeSpan2),
 				_db.DataTable.Select(d => d.Value.Subtract(_testTimeSpan2)).Single()
 			);
 		}
 
-		[Test]
+		[Fact]
 		public void TestNegate()
 		{
-			Assert.AreEqual(_testTimeSpan.Negate(), _db.DataTable.Select(d => d.Value.Negate()).Single());
+			Assert.Equal(_testTimeSpan.Negate(), _db.DataTable.Select(d => d.Value.Negate()).Single());
 		}
 
-		[Test]
+		[Fact]
 		public void TestDuration()
 		{
-			Assert.AreEqual(_testTimeSpan.Duration(), _db.DataTable.Select(d => d.Value.Duration()).Single());
+			Assert.Equal(_testTimeSpan.Duration(), _db.DataTable.Select(d => d.Value.Duration()).Single());
 		}
 	}
 }
