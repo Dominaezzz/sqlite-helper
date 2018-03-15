@@ -78,97 +78,70 @@ namespace Tests
 		[Fact]
 		[Trait("Category", "Aggregate")]
 		public void TestGroupByWithAggregate()
-	    {
-		    using (var query = _db.ExecuteQuery("SELECT SUM(UnitPrice) FROM Track GROUP BY AlbumId"))
-			{
-				var result = _db.Tracks.GroupBy(t => t.AlbumId, (id, tracks) => tracks.Sum(t => t.UnitPrice));
-			    foreach (var item in result)
-			    {
-				    Assert.True(query.Step());
-				    Assert.Equal((decimal)query.GetDouble(0), item);
-			    }
-			    Assert.False(query.Step());
-		    }
+		{
+			var expected = _db.Query("SELECT SUM(UnitPrice) AS _sum FROM Track GROUP BY AlbumId", row => row.Get<decimal>("_sum"));
+			var actual = _db.Tracks.GroupBy(t => t.AlbumId, (id, tracks) => tracks.Sum(t => t.UnitPrice));
+			
+			Assert.Equal(expected, actual);
 		}
 
 		[Fact]
 		[Trait("Category", "Aggregate")]
 		public void TestGroupByWithAggregates()
 		{
-			using (var query = _db.ExecuteQuery("SELECT AlbumId, SUM(UnitPrice), COUNT(*) FROM Track GROUP BY AlbumId"))
+			var expected = _db.Query("SELECT AlbumId, SUM(UnitPrice) AS _sum, COUNT(*) AS _cnt FROM Track GROUP BY AlbumId", row => new
 			{
-				var result = _db.Tracks.GroupBy(t => t.AlbumId, (id, tracks) => new
-				{
-					AlbumId = id,
-					TotalPrice = tracks.Sum(t => t.UnitPrice),
-					Count = tracks.Count()
-				});
-				foreach (var item in result)
-				{
-					Assert.True(query.Step());
-					int? expected = query.IsNull(0) ? (int?)null : query.GetInt(0);
-					Assert.Equal(expected, item.AlbumId);
-					Assert.Equal((decimal)query.GetDouble(1), item.TotalPrice);
-					Assert.Equal(query.GetInt(2), item.Count);
-				}
-				Assert.False(query.Step());
-			}
+				AlbumId = row.Get<int?>("AlbumId"),
+				TotalPrice = row.Get<decimal>("_sum"),
+				Count = row.Get<int>("_cnt")
+			});
+			var actual = _db.Tracks.GroupBy(t => t.AlbumId, (id, tracks) => new
+			{
+				AlbumId = id,
+				TotalPrice = tracks.Sum(t => t.UnitPrice),
+				Count = tracks.Count()
+			});
+			
+			Assert.Equal(expected, actual);
 		}
 
 	    [Fact]
 	    public void TestGroupByWithSelect()
-	    {
-		    using (var query = _db.ExecuteQuery("SELECT AlbumId FROM Track GROUP BY AlbumId"))
-			{
-				var result = _db.Tracks.GroupBy(t => t.AlbumId, (albumId, tracks) => albumId);
-			    foreach (var item in result)
-			    {
-				    Assert.True(query.Step());
-				    int? expected = query.IsNull(0) ? (int?)null : query.GetInt(0);
-				    Assert.Equal(expected, item);
-			    }
-			    Assert.False(query.Step());
-		    }
+		{
+			var expected = _db.Query("SELECT AlbumId FROM Track GROUP BY AlbumId", row => row.Get<int?>("AlbumId"));
+			var actual = _db.Tracks.GroupBy(t => t.AlbumId, (albumId, tracks) => albumId);
+			
+			Assert.Equal(expected, actual);
 		}
 
 	    [Fact]
 	    [Trait("Category", "Aggregate")]
 		public void TestGroupByThenSelectAggregate()
-	    {
-		    using (var query = _db.ExecuteQuery("SELECT SUM(UnitPrice) FROM Track GROUP BY AlbumId"))
-			{
-				var result = _db.Tracks.GroupBy(t => t.AlbumId).Select(g => g.Sum(t => t.UnitPrice));
-			    foreach (var item in result)
-			    {
-				    Assert.True(query.Step());
-				    Assert.Equal((decimal)query.GetDouble(0), item);
-			    }
-			    Assert.False(query.Step());
-		    }
+		{
+			var expected = _db.Query("SELECT SUM(UnitPrice) AS _sum FROM Track GROUP BY AlbumId", row => row.Get<decimal>("_sum"));
+			var actual = _db.Tracks.GroupBy(t => t.AlbumId).Select(g => g.Sum(t => t.UnitPrice));
+		    
+			Assert.Equal(expected, actual);
 		}
 
 	    [Fact]
 	    [Trait("Category", "Aggregate")]
 		public void TestGroupByWithSelectedAggregates()
-	    {
-		    using (var query = _db.ExecuteQuery("SELECT AlbumId, SUM(UnitPrice), COUNT(*) FROM Track GROUP BY AlbumId"))
-		    {
-			    var result = _db.Tracks.GroupBy(t => t.AlbumId).Select(g => new
-			    {
-				    AlbumId = g.Key,
-				    TotalPrice = g.Sum(t => t.UnitPrice),
-				    Count = g.Count()
-			    });
-				foreach (var item in result)
-			    {
-				    Assert.True(query.Step());
-				    int? expected = query.IsNull(0) ? (int?)null : query.GetInt(0);
-				    Assert.Equal(expected, item.AlbumId);
-				    Assert.Equal((decimal)query.GetDouble(1), item.TotalPrice);
-				    Assert.Equal(query.GetInt(2), item.Count);
-			    }
-			    Assert.False(query.Step());
-		    }
+		{
+			var expected = _db.Query("SELECT AlbumId, SUM(UnitPrice) AS _sum, COUNT(*) AS _cnt FROM Track GROUP BY AlbumId", row => new
+			{
+				AlbumId = row.Get<int?>("AlbumId"),
+				TotalPrice = row.Get<decimal>("_sum"),
+				Count = row.Get<int>("_cnt")
+			});
+			var actual = _db.Tracks.GroupBy(t => t.AlbumId).Select(g => new
+			{
+				AlbumId = g.Key,
+				TotalPrice = g.Sum(t => t.UnitPrice),
+				Count = g.Count()
+			});
+			
+			Assert.Equal(expected, actual);
 		}
 
 	    [Fact]
@@ -176,28 +149,24 @@ namespace Tests
 		public void TestGroupByWithHavingAndSelectedAggregates()
 	    {
 		    const string querySQL =
-			    "SELECT AlbumId, SUM(UnitPrice), COUNT(*) FROM Track GROUP BY AlbumId HAVING AVG(Milliseconds) >= 20000";
+			    "SELECT AlbumId, SUM(UnitPrice) AS _sum, COUNT(*) AS _cnt FROM Track GROUP BY AlbumId HAVING AVG(Milliseconds) >= 20000";
 
-			using (var query = _db.ExecuteQuery(querySQL))
-		    {
-				var result = _db.Tracks.GroupBy(t => t.AlbumId)
-					.Where(g => g.Average(t => t.Milliseconds) >= 20000)
-					.Select(g => new
-					{
-						AlbumId = g.Key,
-						TotalPrice = g.Sum(t => t.UnitPrice),
-						Count = g.Count()
-					});
-				foreach (var item in result)
-			    {
-				    Assert.True(query.Step());
-				    int? expected = query.IsNull(0) ? (int?)null : query.GetInt(0);
-				    Assert.Equal(expected, item.AlbumId);
-				    Assert.Equal((decimal)query.GetDouble(1), item.TotalPrice);
-				    Assert.Equal(query.GetInt(2), item.Count);
-			    }
-			    Assert.False(query.Step());
-		    }
+			var expected = _db.Query(querySQL, row => new
+			{
+				AlbumId = row.Get<int?>("AlbumId"),
+				TotalPrice = row.Get<decimal>("_sum"),
+				Count = row.Get<int>("_cnt")
+			});
+			var actual = _db.Tracks.GroupBy(t => t.AlbumId)
+				.Where(g => g.Average(t => t.Milliseconds) >= 20000)
+				.Select(g => new
+				{
+					AlbumId = g.Key,
+					TotalPrice = g.Sum(t => t.UnitPrice),
+					Count = g.Count()
+				});
+
+			Assert.Equal(expected, actual);
 		}
 	}
 }

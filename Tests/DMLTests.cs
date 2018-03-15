@@ -58,25 +58,24 @@ namespace Tests
 		[Trait("Category", "Insert")]
 	    public void TestInsertSimple()
 	    {
-		    Assert.Equal(0, _db.Products.Count());
+			Assert.Empty(_db.Products);
 
 		    int count = _db.Products.Insert(new Product { Name = "Laptop", Price = 1500M });
-
 			Assert.Equal(1, count);
-			Assert.Equal(1, _db.Products.Count());
 
-		    var product = _db.Products.Single();
-
-			Assert.Equal(1, product.Id);
-			Assert.Equal("Laptop", product.Name);
-			Assert.Equal(1500M, product.Price);
+			Assert.Collection(_db.Products, product =>
+			{
+				Assert.Equal(1, product.Id);
+				Assert.Equal("Laptop", product.Name);
+				Assert.Equal(1500M, product.Price);
+			});
 	    }
 
 		[Fact]
 		[Trait("Category", "Insert")]
 		public void TestInsertBatch()
 		{
-			Assert.Equal(0, _db.Products.Count());
+			Assert.Empty(_db.Products);
 
 			var products = new []
 			{
@@ -85,29 +84,24 @@ namespace Tests
 				new Product { Name = "Chocolate", Price = 15M },
 				new Product { Name = "Piano", Price = 2500M },
 				new Product { Name = "Water", Price = 1.5M },
-				new Product { Name = "Paper", Price = 0.5M },
+				new Product { Name = "Paper", Price = 0.5M }
 			};
 
 			int count = _db.Products.Insert(products);
 
 			Assert.Equal(products.Length, count);
-			Assert.Equal(products.Length, _db.Products.Count());
 
-			int i = 0;
-			foreach (var dbProduct in _db.Products)
-			{
-				var product = products[i++];
-				Assert.Equal(i, dbProduct.Id);
-				Assert.Equal(product.Name, dbProduct.Name);
-				Assert.Equal(product.Price, dbProduct.Price);
-			}
+			Assert.Equal(
+				products.Select((p, i) => new { Id = i + 1, p.Name, p.Price }),
+				_db.Products.Select((p, i) => new { p.Id, p.Name, p.Price })
+			);
 		}
 
 	    [Fact]
 	    [Trait("Category", "Insert")]
 		public void TestInsertBreaksUniqueConstraint()
 	    {
-		    Assert.Equal(0, _db.Products.Count());
+		    Assert.Empty(_db.Products);
 
 		    var product1 = new Product { Name = "Laptop", Price = 1500M };
 		    var product2 = new Product { Name = "Laptop", Price = 2000M };
@@ -124,7 +118,7 @@ namespace Tests
 	    [Trait("Category", "Insert")]
 		public void TestInsertOrIgnoreAgainstUniqueConstraint()
 	    {
-		    Assert.Equal(0, _db.Products.Count());
+		    Assert.Empty(_db.Products);
 
 		    var product1 = new Product { Name = "Laptop", Price = 1500M };
 		    var product2 = new Product { Name = "Laptop", Price = 2000M };
@@ -142,41 +136,49 @@ namespace Tests
 	    [Trait("Category", "Insert")]
 		public void TestInsertOrReplaceAgainstUniqueConstraint()
 	    {
-		    Assert.Equal(0, _db.Products.Count());
+		    Assert.Empty(_db.Products);
 
 		    var product1 = new Product { Name = "Laptop", Price = 1500M };
 		    var product2 = new Product { Name = "Laptop", Price = 2000M };
 
 		    int count = _db.Products.Insert(product1);
 		    Assert.Equal(1, count);
-		    Assert.Equal(1, _db.Products.Count());
-			Assert.True(_db.Products.Any(p => p.Id == 1 && p.Name == "Laptop" && p.Price == 1500M));
+			Assert.Collection(_db.Products, p =>
+			{
+				Assert.Equal(1, p.Id);
+				Assert.Equal(product1.Name, p.Name);
+				Assert.Equal(product1.Price, p.Price);
+			});
 
 		    count = _db.Products.Insert(product2, Conflict.Replace);
 		    Assert.Equal(1, count);
-			Assert.Equal(1, _db.Products.Count());
-		    Assert.True(_db.Products.Any(p => p.Id == 2 && p.Name == "Laptop" && p.Price == 2000M));
+			Assert.Collection(_db.Products, p =>
+			{
+				Assert.Equal(2, p.Id);
+				Assert.Equal(product2.Name, p.Name);
+				Assert.Equal(product2.Price, p.Price);
+			});
 		}
 
 	    [Fact]
 	    [Trait("Category", "Insert")]
 		public void TestInsertOrAbortBreaksUniqueConstraint()
 	    {
-		    Assert.Equal(0, _db.Products.Count());
+		    Assert.Empty(_db.Products);
 
 		    var product1 = new Product { Name = "Laptop", Price = 1500M };
 		    var product2 = new Product { Name = "Laptop", Price = 2000M };
 		    var product3 = new Product { Name = "Computer", Price = 2300M };
 			
 		    Assert.Throws<UniqueConstraintException>(() => _db.Products.Insert(new[] {product1, product2, product3}, Conflict.Abort));
-		    Assert.Equal(0, _db.Products.Count());
+		    Assert.Empty(_db.Products);
 		}
 
 	    [Fact]
 	    [Trait("Category", "Insert")]
 		public void TestInsertOrFailBreaksUniqueConstraint()
 	    {
-		    Assert.Equal(0, _db.Products.Count());
+		    Assert.Empty(_db.Products);
 
 		    var product1 = new Product { Name = "Laptop", Price = 1500M };
 		    var product2 = new Product { Name = "Laptop", Price = 2000M };
@@ -193,7 +195,7 @@ namespace Tests
 	    [Trait("Category", "Insert")]
 		public void TestInsertOrRollBackBreaksUniqueConstraint()
 	    {
-		    Assert.Equal(0, _db.Products.Count());
+		    Assert.Empty(_db.Products);
 
 		    var product1 = new Product { Name = "Laptop", Price = 1500M };
 		    var product2 = new Product { Name = "Laptop", Price = 2000M };
@@ -207,8 +209,12 @@ namespace Tests
 			}
 			Assert.Throws<SQLiteException>(() => _db.EndTransaction());
 			
-		    Assert.Equal(1, _db.Products.Count());
-		    Assert.True(_db.Products.Any(p => p.Id == 1 && p.Name == "Computer" && p.Price == 2300M));
+			Assert.Collection(_db.Products, p =>
+			{
+				Assert.Equal(1, p.Id);
+				Assert.Equal(product3.Name, p.Name);
+				Assert.Equal(product3.Price, p.Price);
+			});
 	    }
 
 
@@ -216,7 +222,7 @@ namespace Tests
 		[Trait("Category", "Delete")]
 	    public void TestDeleteAll()
 	    {
-			Assert.Equal(0, _db.Products.Count());
+			Assert.Empty(_db.Products);
 
 		    var products = new[]
 		    {
@@ -233,14 +239,14 @@ namespace Tests
 
 		    int count = _db.Products.DeleteAll();
 			Assert.Equal(products.Length, count);
-			Assert.Equal(0, _db.Products.Count());
+			Assert.Empty(_db.Products);
 	    }
 
 	    [Fact]
 	    [Trait("Category", "Delete")]
 	    public void TestDelete()
 	    {
-		    Assert.Equal(0, _db.Products.Count());
+		    Assert.Empty(_db.Products);
 
 		    var products = new[]
 		    {
@@ -266,7 +272,7 @@ namespace Tests
 	    [Trait("Category", "Delete")]
 	    public void TestDeleteMultiple()
 	    {
-		    Assert.Equal(0, _db.Products.Count());
+		    Assert.Empty(_db.Products);
 
 		    var products = new[]
 		    {
@@ -293,7 +299,7 @@ namespace Tests
 	    [Trait("Category", "Update")]
 	    public void TestUpdate()
 	    {
-		    Assert.Equal(0, _db.Products.Count());
+		    Assert.Empty(_db.Products);
 
 		    var products = new[]
 		    {
@@ -308,14 +314,14 @@ namespace Tests
 		    Assert.Equal(products.Length, _db.Products.Insert(products));
 		    Assert.Equal(products.Length, _db.Products.Count());
 
-			Assert.True(_db.Products.Any(p => p.Id == 4 && p.Name == "Piano" && p.Price == 2500));
+			Assert.Contains(_db.Products, p => p.Id == 4 && p.Name == "Piano" && p.Price == 2500);
 
 		    var product = _db.Products.Single(p => p.Id == 4);
 		    product.Price = 1234;
 			
 			Assert.Equal(1, _db.Products.Update(product));
 
-		    Assert.True(_db.Products.Any(p => p.Id == 4 && p.Name == "Piano" && p.Price == 1234));
+		    Assert.Contains(_db.Products, p => p.Id == 4 && p.Name == "Piano" && p.Price == 1234);
 		}
 	}
 }

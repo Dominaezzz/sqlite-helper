@@ -111,7 +111,7 @@ namespace Tests
 		[InlineData(TestStringUpper)]
 		public void TestReplace(string value)
 		{
-			Assert.Equal(TestString == value, _db.DataTable.Select(d => d.Value == value).Single());
+			Assert.Equal(TestString.Replace('a', 'b'), _db.DataTable.Select(d => d.Value.Replace('a', 'b')).Single());
 		}
 
 		[Theory]

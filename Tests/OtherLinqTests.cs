@@ -41,7 +41,7 @@ namespace Tests
 			    db.DataTable.Insert(new Data<string>() { Value = "Random Text" });
 
 			    var result = db.DataTable.SingleOrDefault();
-
+				Assert.NotNull(result);
 			    Assert.Equal(result.Id, 1);
 			    Assert.Equal(result.Value, "Random Text");
 
@@ -49,6 +49,7 @@ namespace Tests
 			    Assert.Throws<InvalidOperationException>(() => db.DataTable.SingleOrDefault());
 
 			    result = db.DataTable.SingleOrDefault(d => d.Id == 2);
+				Assert.NotNull(result);
 			    Assert.Equal(result.Id, 2);
 			    Assert.Equal(result.Value, "Random Text 2");
 
@@ -89,10 +90,12 @@ namespace Tests
 			    db.DataTable.Insert(new Data<string>() { Value = "Random Text 2" });
 
 			    var result = db.DataTable.FirstOrDefault();
+				Assert.NotNull(result);
 			    Assert.Equal(result.Id, 1);
 			    Assert.Equal(result.Value, "Random Text");
 				
 			    result = db.DataTable.FirstOrDefault(d => d.Id == 2);
+				Assert.NotNull(result);
 			    Assert.Equal(result.Id, 2);
 			    Assert.Equal(result.Value, "Random Text 2");
 
@@ -133,10 +136,12 @@ namespace Tests
 			    db.DataTable.Insert(new Data<string>() { Value = "Random Text 2" });
 
 			    var result = db.DataTable.LastOrDefault();
+				Assert.NotNull(result);
 			    Assert.Equal(result.Id, 2);
 			    Assert.Equal(result.Value, "Random Text 2");
 
 			    result = db.DataTable.LastOrDefault(d => d.Id < 2);
+				Assert.NotNull(result);
 			    Assert.Equal(result.Id, 1);
 			    Assert.Equal(result.Value, "Random Text");
 
@@ -177,10 +182,12 @@ namespace Tests
 			    db.DataTable.Insert(new Data<string>() { Value = "Random Text 2" });
 
 			    var result = db.DataTable.ElementAtOrDefault(1);
+				Assert.NotNull(result);
 			    Assert.Equal(result.Id, 2);
 			    Assert.Equal(result.Value, "Random Text 2");
 
 			    result = db.DataTable.ElementAtOrDefault(0);
+				Assert.NotNull(result);
 			    Assert.Equal(result.Id, 1);
 			    Assert.Equal(result.Value, "Random Text");
 

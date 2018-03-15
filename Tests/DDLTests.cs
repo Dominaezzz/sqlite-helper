@@ -13,10 +13,10 @@ namespace Tests
 	    public class PlainDb : SQLiteDatabase
 	    {
 		    public Table<User> Users { get; set; }
-			public View<UserView> UserView { get; set; }
+			public View<User> UserView { get; set; }
 	    }
 
-		[Table("Users")]
+		[Table("Users"), View("UserView")]
 	    public class User
 	    {
 			[PrimaryKey]
@@ -27,13 +27,6 @@ namespace Tests
 			public string LastName { get; set; }
 			public DateTime? DateOfBirth { get; set; }
 	    }
-		public class UserView
-		{
-			public Guid UserGuid { get; set; }
-			public string FirstName { get; set; }
-			public string LastName { get; set; }
-			public DateTime? DateOfBirth { get; set; }
-		}
 
 		[Fact]
 	    public void TestCreateTable()
@@ -59,11 +52,33 @@ namespace Tests
 			    })
 				.ToList();
 
-				Assert.Equal(4, result.Count);
-				Assert.True(result.Any(c => c.CId == 0 && c.Name == "UserGuid" && c.PrimaryKey));
-			    Assert.True(result.Any(c => c.CId == 1 && c.Name == "FirstName" && c.NotNull));
-			    Assert.True(result.Any(c => c.CId == 2 && c.Name == "LastName" && c.NotNull));
-			    Assert.True(result.Any(c => c.CId == 3 && c.Name == "DateOfBirth" && !c.NotNull));
+				Assert.Collection(
+					result,
+					c =>
+					{
+						Assert.Equal(0, c.CId);
+						Assert.Equal("UserGuid", c.Name);
+						Assert.True(c.PrimaryKey);
+					},
+					c =>
+					{
+						Assert.Equal(1, c.CId);
+						Assert.Equal("FirstName", c.Name);
+						Assert.True(c.NotNull);
+					},
+					c =>
+					{
+						Assert.Equal(2, c.CId);
+						Assert.Equal("LastName", c.Name);
+						Assert.True(c.NotNull);
+					},
+					c =>
+					{
+						Assert.Equal(3, c.CId);
+						Assert.Equal("DateOfBirth", c.Name);
+						Assert.False(c.NotNull);
+					}
+				);
 
 //			    var indexColumns = db.Query("PRAGMA index_info([UsersUnique]);", reader => new
 //			    {
@@ -103,14 +118,47 @@ namespace Tests
 					    PrimaryKey = reader.Get<bool>("pk")
 				    })
 				    .ToList();
-
-			    Assert.Equal(6, result.Count);
-			    Assert.True(result.Any(c => c.CId == 0 && c.Name == "Id" && c.PrimaryKey));
-			    Assert.True(result.Any(c => c.CId == 1 && c.Name == "name" && c.NotNull));
-			    Assert.True(result.Any(c => c.CId == 2 && c.Name == "unit_price" && c.NotNull && Convert.ToDecimal(c.Default) == 0.0M));
-			    Assert.True(result.Any(c => c.CId == 3 && c.Name == "expiry_date" && c.NotNull));
-			    Assert.True(result.Any(c => c.CId == 4 && c.Name == "duration" && c.NotNull));
-			    Assert.True(result.Any(c => c.CId == 5 && c.Name == "UserId" && c.NotNull));
+				
+				Assert.Collection(
+					result,
+					c =>
+					{
+						Assert.Equal(0, c.CId);
+						Assert.Equal("Id", c.Name);
+						Assert.True(c.PrimaryKey);
+					},
+					c =>
+					{
+						Assert.Equal(1, c.CId);
+						Assert.Equal("name", c.Name);
+						Assert.True(c.NotNull);
+					},
+					c =>
+					{
+						Assert.Equal(2, c.CId);
+						Assert.Equal("unit_price", c.Name);
+						Assert.True(c.NotNull);
+						Assert.Equal(0.0M, Convert.ToDecimal(c.Default));
+					},
+					c =>
+					{
+						Assert.Equal(3, c.CId);
+						Assert.Equal("expiry_date", c.Name);
+						Assert.True(c.NotNull);
+					},
+					c =>
+					{
+						Assert.Equal(4, c.CId);
+						Assert.Equal("duration", c.Name);
+						Assert.True(c.NotNull);
+					},
+					c =>
+					{
+						Assert.Equal(5, c.CId);
+						Assert.Equal("UserId", c.Name);
+						Assert.True(c.NotNull);
+					}
+				);
 			}
 	    }
 
@@ -129,10 +177,22 @@ namespace Tests
 				    Name = reader.Get<string>("name")
 			    })
 				.ToList();
-
-				Assert.Equal(2, indexColumns.Count);
-				Assert.True(indexColumns.Any(c => c.No == 0 && c.CId == 1 && c.Name == "FirstName"));
-			    Assert.True(indexColumns.Any(c => c.No == 1 && c.CId == 2 && c.Name == "LastName"));
+				
+				Assert.Collection(
+					indexColumns,
+					c =>
+					{
+						Assert.Equal(0, c.No);
+						Assert.Equal(1, c.CId);
+						Assert.Equal("FirstName", c.Name);
+					},
+					c =>
+					{
+						Assert.Equal(1, c.No);
+						Assert.Equal(2, c.CId);
+						Assert.Equal("LastName", c.Name);
+					}
+				);
 			}
 		}
 
@@ -159,7 +219,10 @@ namespace Tests
 					new User { UserGuid = Guid.NewGuid(), FirstName = "BY", LastName = "CX" }
 				});
 
-				Assert.Equal(db.Users.Count(u => u.DateOfBirth != null), db.UserView.Count());
+				Assert.Equal(
+					db.Users.Where(u => u.DateOfBirth != null).Select(u => u.UserGuid),
+					db.UserView.Select(u => u.UserGuid)
+				);
 			}
 		}
 

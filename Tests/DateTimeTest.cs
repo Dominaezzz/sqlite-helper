@@ -22,12 +22,11 @@ namespace Tests
 			_db.Dispose();
 		}
 
-		public static IEnumerable<object[]> EnumerateValues(int from, int to)
-		{
-			return Enumerable.Range(from, to - from).Select(i => new object[]{ i });
-		}
 
-		[Theory, MemberData(nameof(EnumerateValues), -10, 10)]
+		[Theory]
+		[InlineData(-10)]
+		[InlineData(0)]
+		[InlineData(10)]
 		public void TestAddYears(int years)
 		{
 			DateTime result = _db.DataTable.Select(d => d.Value.AddYears(years)).Single();
@@ -35,7 +34,10 @@ namespace Tests
 			Assert.Equal(_testDate.AddYears(years), result);
 		}
 
-		[Theory, MemberData(nameof(EnumerateValues), -10, 10)]
+		[Theory]
+		[InlineData(-10)]
+		[InlineData(0)]
+		[InlineData(10)]
 		public void TestAddMonths(int months)
 		{
 			DateTime result = _db.DataTable.Select(d => d.Value.AddMonths(months)).Single();
@@ -43,7 +45,10 @@ namespace Tests
 			Assert.Equal(_testDate.AddMonths(months), result);
 		}
 
-		[Theory, MemberData(nameof(EnumerateValues), -10, 10)]
+		[Theory]
+		[InlineData(-10)]
+		[InlineData(0)]
+		[InlineData(10)]
 		public void TestAddDays(int days)
 		{
 			DateTime result = _db.DataTable.Select(d => d.Value.AddDays(days)).Single();
@@ -51,7 +56,10 @@ namespace Tests
 			Assert.Equal(_testDate.AddDays(days), result);
 		}
 
-		[Theory, MemberData(nameof(EnumerateValues), -10, 10)]
+		[Theory]
+		[InlineData(-10)]
+		[InlineData(0)]
+		[InlineData(10)]
 		public void TestAddHours(int hours)
 		{
 			DateTime result = _db.DataTable.Select(d => d.Value.AddHours(hours)).Single();
@@ -59,7 +67,10 @@ namespace Tests
 			Assert.Equal(_testDate.AddHours(hours), result);
 		}
 
-		[Theory, MemberData(nameof(EnumerateValues), -10, 10)]
+		[Theory]
+		[InlineData(-10)]
+		[InlineData(0)]
+		[InlineData(10)]
 		public void TestAddMinutes(int minutes)
 		{
 			DateTime result = _db.DataTable.Select(d => d.Value.AddMinutes(minutes)).Single();
@@ -67,7 +78,10 @@ namespace Tests
 			Assert.Equal(_testDate.AddMinutes(minutes), result);
 		}
 
-		[Theory, MemberData(nameof(EnumerateValues), -10, 10)]
+		[Theory]
+		[InlineData(-10)]
+		[InlineData(0)]
+		[InlineData(10)]
 		public void TestAddSeconds(int seconds)
 		{
 			DateTime result = _db.DataTable.Select(d => d.Value.AddSeconds(seconds)).Single();
@@ -75,7 +89,10 @@ namespace Tests
 			Assert.Equal(_testDate.AddSeconds(seconds), result);
 		}
 
-		[Theory, MemberData(nameof(EnumerateValues), -10, 10)]
+		[Theory]
+		[InlineData(-10)]
+		[InlineData(0)]
+		[InlineData(10)]
 		public void TestAddMilliseconds(int milliseconds)
 		{
 			DateTime result = _db.DataTable.Select(d => d.Value.AddMilliseconds(milliseconds)).Single();
@@ -83,7 +100,10 @@ namespace Tests
 			Assert.Equal(_testDate.AddMilliseconds(milliseconds), result);
 		}
 
-		[Theory(Skip = "Level of ganularity not supported."), MemberData(nameof(EnumerateValues), -10, 10)]
+		[Theory(Skip = "Level of ganularity not supported.")]
+		[InlineData(-10)]
+		[InlineData(0)]
+		[InlineData(10)]
 		public void TestAddTicks(int ticks)
 		{
 			DateTime result = _db.DataTable.Select(d => d.Value.AddTicks(ticks)).Single();
@@ -91,7 +111,10 @@ namespace Tests
 			Assert.Equal(_testDate.AddTicks(ticks), result);
 		}
 
-		[Theory, MemberData(nameof(EnumerateValues), -10, 10)]
+		[Theory]
+		[InlineData(-10)]
+		[InlineData(0)]
+		[InlineData(10)]
 		[Trait("Category", "TimeSpan")]
 		public void TestAdd(int millis)
 		{

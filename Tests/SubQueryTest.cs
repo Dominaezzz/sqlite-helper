@@ -23,23 +23,21 @@ namespace Tests
 		public void TestSimpleSubQuery()
 		{
 			const string querySQL =
-				"SELECT p.Name, (SELECT COUNT(*) FROM PlaylistTrack WHERE PlaylistId == p.PlaylistId) " +
+				"SELECT p.Name, (SELECT COUNT(*) FROM PlaylistTrack WHERE PlaylistId == p.PlaylistId) AS _count " +
 				"FROM Playlist p";
-			using (var query = _db.ExecuteQuery(querySQL))
+
+			var expected = _db.Query(querySQL, row => new
 			{
-				var result = _db.Playlists.Select(p => new
-				{
-					Playlist = p.Name,
-					TrackCount = _db.PlaylistTracks.Count(pt => pt.PlaylistId == p.PlaylistId)
-				});
-				foreach (var item in result)
-				{
-					Assert.True(query.Step());
-					Assert.Equal(query.GetText(0), item.Playlist);
-					Assert.Equal(query.GetInt(1), item.TrackCount);
-				}
-				Assert.False(query.Step());
-			}
+				Playlist = row.Get<string>("Name"),
+				TrackCount = row.Get<int>("_count")
+			});
+			var actual = _db.Playlists.Select(p => new
+			{
+				Playlist = p.Name,
+				TrackCount = _db.PlaylistTracks.Count(pt => pt.PlaylistId == p.PlaylistId)
+			});
+			
+			Assert.Equal(expected, actual);
 		}
 	}
 }
