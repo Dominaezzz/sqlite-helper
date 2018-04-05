@@ -23,5 +23,16 @@ namespace SQLite.Net.Helpers
 		    }
 		    return base.VisitConstant(node);
 	    }
-    }
+
+		protected override Expression VisitProjection(ProjectionExpression proj)
+		{
+			QueryExpression source = (QueryExpression)Visit(proj.Source);
+
+			if (source != proj.Source)
+			{
+				return new ProjectionExpression(source, proj.Projector, proj.Aggregator);
+			}
+			return proj;
+		}
+	}
 }

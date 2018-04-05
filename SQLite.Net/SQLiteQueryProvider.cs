@@ -71,8 +71,8 @@ namespace SQLite.Net
 		{
 			if (expression is ProjectionExpression projection) return projection;
 			expression = Evaluator.PartialEval(expression, CanBeEvaluatedLocally);
-			expression = ConstantEscaper.EscapeConstants(expression);
 			expression = QueryBinder.Bind(this, expression);
+			expression = ConstantEscaper.EscapeConstants(expression);
 			expression = OrderByRewriter.Rewrite(expression);
 			expression = RedundantSubqueryRemover.Remove(expression);
 			expression = UnusedColumnRemover.Remove(expression);
