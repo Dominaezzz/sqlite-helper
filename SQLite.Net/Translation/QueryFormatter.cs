@@ -617,6 +617,11 @@ namespace SQLite.Net.Translation
 						Visit(u.Operand);
 						break;
 					}
+					else if (u.Type == typeof(object))
+					{
+						Visit(u.Operand);
+						break;
+					}
 					goto default;
 				default:
 					throw new NotSupportedException($"The unary operator ‘{u.NodeType}’ is not supported");
