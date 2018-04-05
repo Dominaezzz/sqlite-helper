@@ -35,6 +35,14 @@ namespace Tests
 		}
 
 		[Fact]
+		public void TestQueryDirectPrimitive()
+		{
+			var result = _db.Query<int>("SELECT 3").Single();
+
+			Assert.Equal(3, result);
+		}
+
+		[Fact]
 		public void TestQueryDynamic()
 		{
 			var result = _db.Query("SELECT 3 AS TestLong, 'Hey!' AS TestString, 5.6 AS TestReal").Single();

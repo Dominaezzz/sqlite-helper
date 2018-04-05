@@ -358,29 +358,37 @@ namespace SQLite.Net
 		/// <returns>An IEnumerable with one result for each row from the query.</returns>
 		public IEnumerable<T> Query<T>(string sql, params object[] args)
 	    {
-		    using (var query = ExecuteQuery(sql, args))
-		    {
-			    List<MemberBinding> bindings = new List<MemberBinding>();
-			    foreach (var prop in typeof(T).GetRuntimeProperties().Where(p => !p.IsDefined(typeof(IgnoreAttribute))))
+			using (var query = ExecuteQuery(sql, args))
+			{
+				Expression projExpr;
+				if (Orm.IsColumnTypeSupported(typeof(T)))
 				{
-					string name = Orm.GetColumnName(prop);
-					if (query.HasColumn(name))
+					projExpr = new ColumnExpression(typeof(T), null, query.GetColumnName(0));
+				}
+				else
+				{
+					List<MemberBinding> bindings = new List<MemberBinding>();
+					foreach (var prop in typeof(T).GetRuntimeProperties().Where(p => !p.IsDefined(typeof(IgnoreAttribute))))
 					{
-						bindings.Add(Expression.Bind(
-							prop, new ColumnExpression(prop.PropertyType, null, name)
-						));
+						string name = Orm.GetColumnName(prop);
+						if (query.HasColumn(name))
+						{
+							bindings.Add(Expression.Bind(
+								prop, new ColumnExpression(prop.PropertyType, null, name)
+							));
+						}
 					}
-			    }
+					projExpr = Expression.MemberInit(Expression.New(typeof(T)), bindings);
+				}
 
-			    var projExpr = Expression.MemberInit(Expression.New(typeof(T)), bindings);
-			    var projectionExpr = ProjectionBuilder.Build(projExpr, null, s => query.GetColumnIndex(s));
-			    var projector = (Func<ProjectionRow, T>) projectionExpr.Compile();
+				var projectionExpr = ProjectionBuilder.Build(projExpr, null, s => query.GetColumnIndex(s));
+				var projector = (Func<ProjectionRow, T>) projectionExpr.Compile();
 				ProjectionRow projectionRow = new ProjectionRow(_provider, query);
 
-			    while (query.Step())
-			    {
-				    yield return projector(projectionRow);
-			    }
+				while (query.Step())
+				{
+					yield return projector(projectionRow);
+				}
 		    }
 	    }
 
