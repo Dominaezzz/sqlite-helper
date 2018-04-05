@@ -325,26 +325,26 @@ namespace SQLite.Net
 		/// <param name="sql">The sql text of the query, with optional escaped parameters.</param>
 		/// <param name="args">Parameters to bind to the SQL.</param>
 		/// <returns>An IEnumerable with one result for each row from the query.</returns>
-	    public IEnumerable<dynamic> Query(string sql, params object[] args)
-	    {
-		    using (var query = ExecuteQuery(sql, args))
-		    {
-			    if (query.Columns.Count() != query.Columns.Distinct().Count())
-			    {
-				    throw new ArgumentException("Query should return unique set of column names.");
-			    }
-			    while (query.Step())
-			    {
-					object row = new ExpandoObject();
-				    var dictionary = (IDictionary<string, object>) row;
-				    for (int i = 0; i < query.ColumnCount; i++)
-				    {
-					    dictionary[query.GetColumnName(i)] = query[i];
-				    }
-				    yield return row;
-			    }
-		    }
-	    }
+		public IEnumerable<dynamic> Query(string sql, params object[] args)
+		{
+			using (var query = ExecuteQuery(sql, args))
+			{
+				Dictionary<string, int> columnIndexes;
+				try
+				{
+					columnIndexes = Enumerable.Range(0, query.ColumnCount).ToDictionary(query.GetColumnName);
+				}
+				catch (ArgumentException)
+				{
+					throw new ArgumentException("Query should return unique set of column names.");
+				}
+
+				while (query.Step())
+				{
+					yield return new DynamicRow(columnIndexes, query);
+				}
+			}
+		}
 
 		/// <summary>
 		/// Executes a query with the given text (SQL).

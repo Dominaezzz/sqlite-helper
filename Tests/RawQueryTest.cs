@@ -48,8 +48,20 @@ namespace Tests
 			var result = _db.Query("SELECT 3 AS TestLong, 'Hey!' AS TestString, 5.6 AS TestReal").Single();
 
 			Assert.Equal(3, result.TestLong);
+			Assert.Equal(3, result["TestLong"]);
+			Assert.Equal(3, result[0]);
+
 			Assert.Equal("Hey!", result.TestString);
+			Assert.Equal("Hey!", result["TestString"]);
+			Assert.Equal("Hey!", result[1]);
+
 			Assert.Equal(5.6, result.TestReal);
+			Assert.Equal(5.6, result["TestReal"]);
+			Assert.Equal(5.6, result[2]);
+			
+			Assert.ThrowsAny<Exception>(() => result.lololol);
+			Assert.ThrowsAny<Exception>(() => result["lololol"]);
+			Assert.ThrowsAny<Exception>(() => result[1010101]);
 		}
 
 		[Fact]
