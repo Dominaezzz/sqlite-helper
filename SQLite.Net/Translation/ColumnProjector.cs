@@ -50,17 +50,15 @@ namespace SQLite.Net.Translation
 				if (expression.NodeType == (ExpressionType)DbExpressionType.Column)
 				{
 					ColumnExpression column = (ColumnExpression)expression;
-					ColumnExpression mapped;
 					// If column has been mapped already just return it.
-					if (_map.TryGetValue(column, out mapped)) return mapped;
+					if (_map.TryGetValue(column, out var mapped)) return mapped;
 					
 					string columnName = GetUniqueColumnName(column.Name);
 
 					_columns.Add(new ColumnDeclaration(columnName, column));
 					_columnNames.Add(columnName);
 					
-					_map[column] = mapped = new ColumnExpression(column.Type, _newAlias, columnName);
-					return mapped;
+					return _map[column] = new ColumnExpression(column.Type, _newAlias, columnName);
 				}
 				else
 				{
@@ -103,6 +101,7 @@ namespace SQLite.Net.Translation
 			private readonly List<string> _existingAliases;
 			private readonly HashSet<Expression> _candidates = new HashSet<Expression>();
 			private bool _isBlocked = false;
+			private bool _childMustBeColumn = false;
 
 			private Nominator(IEnumerable<string> existingAliases)
 			{
@@ -154,7 +153,7 @@ namespace SQLite.Net.Translation
 					case ExpressionType.Coalesce:
 						return true;
 					case ExpressionType.Constant:
-						return true;
+						return Orm.IsColumnTypeSupported(expression.Type);
 					case ExpressionType.Convert:
 					case ExpressionType.ConvertChecked:
 						return true;
@@ -210,19 +209,23 @@ namespace SQLite.Net.Translation
 				if (expression == null) return null;
 
 				bool saveIsBlocked = _isBlocked;
+
 				if (MustBeColumn(expression))
 				{
 					_candidates.Add(expression);
 					_isBlocked = false;
+					_childMustBeColumn = true;
 				}
 				else
 				{
+					bool saveChildMustBeColumn = _childMustBeColumn;
+					_childMustBeColumn = false;
 					base.Visit(expression);
 					if (!_isBlocked)
 					{
 						if (CanBeColumn(expression))
 						{
-							_candidates.Add(expression);
+							if(_childMustBeColumn) _candidates.Add(expression);
 							_isBlocked = false;
 						}
 						else
@@ -230,6 +233,7 @@ namespace SQLite.Net.Translation
 							_isBlocked = true;
 						}
 					}
+					_childMustBeColumn |= saveChildMustBeColumn;
 				}
 				_isBlocked |= saveIsBlocked;
 				return expression;
