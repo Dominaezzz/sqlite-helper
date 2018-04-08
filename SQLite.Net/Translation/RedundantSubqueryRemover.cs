@@ -35,7 +35,7 @@ namespace SQLite.Net.Translation
 		protected override Expression VisitProjection(ProjectionExpression proj)
 		{
 			proj = (ProjectionExpression)base.VisitProjection(proj);
-			if (proj.Source is SelectExpression select && select.From is SelectExpression)
+			if (proj.Source is SelectExpression select && select.From is QueryExpression)
 			{
 				List<SelectExpression> redundant = RedundantSubqueryGatherer.Gather(proj.Source);
 				if (redundant != null)
@@ -48,7 +48,13 @@ namespace SQLite.Net.Translation
 
 		private static bool ProjectionIsSimple(SelectExpression select)
 		{
-			return select.Columns.All(c => c.Expression is ColumnExpression && ((ColumnExpression)c.Expression).Name == c.Name);
+			return select.Columns.All(c => c.Expression is ColumnExpression colExpr && colExpr.Name == c.Name);
+		}
+
+		private static bool IsColumnProjection(SelectExpression select)
+		{
+			return !select.Columns.Any(cd => cd.Expression.NodeType != (ExpressionType)DbExpressionType.Column &&
+											 cd.Expression.NodeType != ExpressionType.Constant);
 		}
 
 		private static bool IsNameMapProjection(SelectExpression select)
@@ -62,6 +68,11 @@ namespace SQLite.Net.Translation
 					(col, fCol) => col.Expression is ColumnExpression && ((ColumnExpression)col.Expression).Name == fCol.Name
 				)
 				.All(equal => equal);
+			}
+
+			if (select.From is RawQueryExpression)
+			{
+				return IsColumnProjection(select);
 			}
 			return false;
 		}
@@ -198,12 +209,6 @@ namespace SQLite.Net.Translation
 				if (source is SelectExpression select) return select;
 				if (source is JoinExpression join) return GetLeftMostSelect(join.Left);
 				return null;
-			}
-
-			private static bool IsColumnProjection(SelectExpression select)
-			{
-				return !select.Columns.Any(cd => cd.Expression.NodeType != (ExpressionType) DbExpressionType.Column &&
-				                                 cd.Expression.NodeType != ExpressionType.Constant);
 			}
 
 			private static bool CanMergeWithFrom(SelectExpression select, bool isTopLevel)

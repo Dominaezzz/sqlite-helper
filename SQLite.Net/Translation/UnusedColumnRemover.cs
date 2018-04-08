@@ -24,19 +24,19 @@ namespace SQLite.Net.Translation
 		private void MarkColumnAsUsed(string alias, string name)
 		{
 			if (alias == null) return;
-			HashSet<string> columns;
-			if (!_allColumnsUsed.TryGetValue(alias, out columns))
+			if (_allColumnsUsed.TryGetValue(alias, out var columns))
 			{
-				columns = new HashSet<string>();
-				_allColumnsUsed[alias] = columns;
+				columns.Add(name);
 			}
-			columns.Add(name);
+			else
+			{
+				_allColumnsUsed[alias] = new HashSet<string> {name};
+			}
 		}
 
 		private bool IsColumnUsed(string alias, string name)
 		{
-			if (alias == null) return true;
-			if (_allColumnsUsed.TryGetValue(alias, out HashSet<string> columnsUsed))
+			if (alias != null && _allColumnsUsed.TryGetValue(alias, out HashSet<string> columnsUsed))
 			{
 				if (columnsUsed != null)
 				{
@@ -48,7 +48,7 @@ namespace SQLite.Net.Translation
 
 		private void ClearColumnsUsed(string alias)
 		{
-			_allColumnsUsed[alias] = new HashSet<string>();
+			if (alias != null && _allColumnsUsed.TryGetValue(alias, out var columns)) columns.Clear();
 		}
 
 		protected override Expression VisitColumn(ColumnExpression column)
@@ -76,7 +76,7 @@ namespace SQLite.Net.Translation
 			// visit column projection first
 			ReadOnlyCollection<ColumnDeclaration> columns = select.Columns;
 
-			if (_allColumnsUsed.TryGetValue(select.Alias, out HashSet<string> columnsUsed))
+			if (select.Alias != null && _allColumnsUsed.TryGetValue(select.Alias, out HashSet<string> columnsUsed))
 			{
 				List<ColumnDeclaration> alternate = null;
 				for (int i = 0, n = select.Columns.Count; i < n; i++)
