@@ -18,13 +18,12 @@ namespace SQLite.Net.Helpers
 				case DbExpressionType.Table:
 					return VisitTable((TableExpression)exp);
 				case DbExpressionType.RawQuery:
-					return VisitRawQuery((RawQueryExpression)exp);
+				case DbExpressionType.Select:
+					return VisitQuery((QueryExpression)exp);
 				case DbExpressionType.Join:
 					return VisitJoin((JoinExpression)exp);
 				case DbExpressionType.Column:
 					return VisitColumn((ColumnExpression)exp);
-				case DbExpressionType.Select:
-					return VisitSelect((SelectExpression)exp);
 				case DbExpressionType.Projection:
 					return VisitProjection((ProjectionExpression)exp);
 				case DbExpressionType.Aggregate:
@@ -47,6 +46,19 @@ namespace SQLite.Net.Helpers
 			return table;
 		}
 
+		protected virtual Expression VisitQuery(QueryExpression query)
+		{
+			switch (query.NodeType)
+			{
+				case (ExpressionType)DbExpressionType.Select:
+					return VisitSelect((SelectExpression) query);
+				case (ExpressionType)DbExpressionType.RawQuery:
+					return VisitRawQuery((RawQueryExpression)query);
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+		}
+
 		protected virtual Expression VisitRawQuery(RawQueryExpression rawQuery)
 		{
 			return rawQuery;
@@ -60,9 +72,9 @@ namespace SQLite.Net.Helpers
 		protected virtual Expression VisitSelect(SelectExpression select)
 		{
 			Expression from = VisitSource(select.From);
+			ReadOnlyCollection<ColumnDeclaration> columns = VisitColumnDeclarations(select.Columns);
 			Expression where = Visit(select.Where);
 
-			ReadOnlyCollection<ColumnDeclaration> columns = VisitColumnDeclarations(select.Columns);
 			ReadOnlyCollection<Expression> groupBy = select.GroupBy == null ? null : Visit(select.GroupBy);
 			Expression having = Visit(select.Having);
 			ReadOnlyCollection<OrderExpression> orderBy = VisitOrderBy(select.OrderBy);
