@@ -46,7 +46,7 @@ namespace SQLite.Net
 		public IQueryProvider Provider { get; }
 	}
 
-	public class Grouping<TKey, TElement> : IGrouping<TKey, TElement>
+	internal class Grouping<TKey, TElement> : IGrouping<TKey, TElement>
 	{
 		private readonly IEnumerable<TElement> _group;
 		
