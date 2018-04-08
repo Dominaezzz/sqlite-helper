@@ -928,14 +928,15 @@ namespace SQLite.Net.Translation
 					TableExpression table = (TableExpression)source;
 					_sb.Append('[')
 						.Append(table.Name)
-						.Append(']')
-						.Append(" AS ").Append(table.Alias);
+						.Append(']');
+					if (!string.IsNullOrWhiteSpace(table.Alias)) _sb.Append(" AS ").Append(table.Alias);
 					break;
 				case DbExpressionType.RawQuery:
 					RawQueryExpression rawQuery = (RawQueryExpression)source;
 					_sb.Append("(")
 						.Append(rawQuery.SQLQuery)
-						.Append(")").Append(" AS ").Append(rawQuery.Alias);
+						.Append(")");
+					if (!string.IsNullOrWhiteSpace(rawQuery.Alias)) _sb.Append(" AS ").Append(rawQuery.Alias);
 					break;
 				case DbExpressionType.Select:
 					SelectExpression select = (SelectExpression)source;
@@ -943,7 +944,8 @@ namespace SQLite.Net.Translation
 					AppendNewLine(Indentation.Inner);
 					Visit(select);
 					AppendNewLine(Indentation.Outer);
-					_sb.Append(")").Append(" AS ").Append(select.Alias);
+					_sb.Append(")");
+					if (!string.IsNullOrWhiteSpace(select.Alias)) _sb.Append(" AS ").Append(select.Alias);
 					break;
 				case DbExpressionType.Join:
 					VisitJoin((JoinExpression)source);
