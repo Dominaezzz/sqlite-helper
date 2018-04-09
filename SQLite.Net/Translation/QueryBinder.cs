@@ -19,7 +19,7 @@ namespace SQLite.Net.Translation
 		private readonly Dictionary<ParameterExpression, Expression> _map = new Dictionary<ParameterExpression, Expression>();
 
 		private readonly IQueryProvider _provider;
-		private Expression _root;
+		private readonly Expression _root;
 		private uint _aliasCount;
 		private List<OrderExpression> _thenBys;
 
@@ -96,6 +96,20 @@ namespace SQLite.Net.Translation
 			return c;
 		}
 
+		protected override Expression VisitProjection(ProjectionExpression proj)
+		{
+			if (proj.Source is RawQueryExpression rawQuery && rawQuery.Alias == null)
+			{
+				string alias = GetNewAlias();
+				var pc = ProjectColumns(proj.Projector, alias, rawQuery.Alias);
+				return new ProjectionExpression(
+					new RawQueryExpression(rawQuery.Type, alias, rawQuery.SQLQuery),
+					pc.Projector
+				);
+			}
+			return base.VisitProjection(proj);
+		}
+
 		protected override Expression VisitParameter(ParameterExpression p)
 		{
 			return _map.TryGetValue(p, out Expression e) ? e : p;
@@ -159,152 +173,85 @@ namespace SQLite.Net.Translation
 				switch (mi.Name)
 				{
 					case nameof(Queryable.Where):
-						return BindWhere(call.Arguments[0], GetLambda(call.Arguments[1]));
+						return BindWhere(call);
 					case nameof(Queryable.Select):
-						return BindSelect(call.Arguments[0], GetLambda(call.Arguments[1]));
+						return BindSelect(call);
 					case nameof(Queryable.SelectMany):
-						return BindSelectMany(
-							call.Arguments[0], GetLambda(call.Arguments[1]), GetLambda(call.Arguments[2])
-						);
+						return BindSelectMany(call);
 					case nameof(Queryable.Join):
-						return BindJoin(
-							call.Arguments[0], call.Arguments[1],
-							GetLambda(call.Arguments[2]),
-							GetLambda(call.Arguments[3]),
-							GetLambda(call.Arguments[4])
-						);
+						return BindJoin(call);
 					case nameof(Queryable.GroupJoin):
-						return BindGroupJoin(
-							call.Arguments[0], call.Arguments[1],
-							GetLambda(call.Arguments[2]),
-							GetLambda(call.Arguments[3]),
-							GetLambda(call.Arguments[4])
-						);
+						return BindGroupJoin(call);
 					case nameof(Queryable.OrderBy):
-						return BindOrderBy(call.Arguments[0], GetLambda(call.Arguments[1]), OrderType.Ascending);
 					case nameof(Queryable.OrderByDescending):
-						return BindOrderBy(call.Arguments[0], GetLambda(call.Arguments[1]), OrderType.Descending);
+						return BindOrderBy(call);
 					case nameof(Queryable.ThenBy):
-						return BindThenBy(call.Arguments[0], GetLambda(call.Arguments[1]), OrderType.Ascending);
 					case nameof(Queryable.ThenByDescending):
-						return BindThenBy(call.Arguments[0], GetLambda(call.Arguments[1]), OrderType.Descending);
+						return BindThenBy(call);
 					case nameof(Queryable.GroupBy):
-						switch (call.Arguments.Count)
-						{
-							case 2:
-								return BindGroupBy(call.Arguments[0], GetLambda(call.Arguments[1]), null, null);
-							case 3:
-								LambdaExpression lambda1 = GetLambda(call.Arguments[1]);
-								LambdaExpression lambda2 = GetLambda(call.Arguments[2]);
-								switch (lambda2.Parameters.Count)
-								{
-									case 1: // second lambda is element selector
-										return BindGroupBy(call.Arguments[0], lambda1, lambda2, null);
-									case 2: // second lambda is result selector
-										return BindGroupBy(call.Arguments[0], lambda1, null, lambda2);
-								}
-								break;
-							case 4:
-								return BindGroupBy(
-									call.Arguments[0],
-									GetLambda(call.Arguments[1]),
-									GetLambda(call.Arguments[2]),
-									GetLambda(call.Arguments[3])
-								);
-						}
-						break;
+						return BindGroupBy(call);
 					case nameof(Queryable.Count):
 					case nameof(Queryable.LongCount):
 					case nameof(Queryable.Min):
 					case nameof(Queryable.Max):
 					case nameof(Queryable.Sum):
 					case nameof(Queryable.Average):
-						switch (call.Arguments.Count)
-						{
-							case 1:
-								return BindAggregate(call.Arguments[0], mi, null, call == _root);
-							case 2:
-								return BindAggregate(call.Arguments[0], mi, GetLambda(call.Arguments[1]), call == _root);
-						}
-						break;
+						return BindAggregate(call);
 					case nameof(Queryable.Distinct) when call.Arguments.Count == 1:
-						return BindDistinct(call.Arguments[0]);
-					case nameof(Queryable.Skip) when call.Arguments.Count == 2:
-						return BindSkip(call.Arguments[0], call.Arguments[1]);
-					case nameof(Queryable.Take) when call.Arguments.Count == 2:
-						return BindTake(call.Arguments[0], call.Arguments[1]);
+						return BindDistinct(call);
+					case nameof(Queryable.Skip):
+						return BindSkip(call);
+					case nameof(Queryable.Take):
+						return BindTake(call);
 					case nameof(Queryable.ElementAt):
-						return BindElementAt(call.Arguments[0], call.Arguments[1], call == _root);
 					case nameof(Queryable.ElementAtOrDefault):
-						return BindElementAtOrDefault(call.Arguments[0], call.Arguments[1], call == _root);
+						return BindElementAt(call);
 					case nameof(Queryable.First):
-						switch (call.Arguments.Count)
-						{
-							case 1: return BindFirst(call.Arguments[0], null, call == _root);
-							case 2: return BindFirst(call.Arguments[0], GetLambda(call.Arguments[1]), call == _root);
-						}
-						break;
 					case nameof(Queryable.FirstOrDefault):
-						switch (call.Arguments.Count)
-						{
-							case 1: return BindFirstOrDefault(call.Arguments[0], null, call == _root);
-							case 2: return BindFirstOrDefault(call.Arguments[0], GetLambda(call.Arguments[1]), call == _root);
-						}
-						break;
+						return BindFirst(call);
 					case nameof(Queryable.Single):
-						switch (call.Arguments.Count)
-						{
-							case 1: return BindSingle(call.Arguments[0], null, call == _root);
-							case 2: return BindSingle(call.Arguments[0], GetLambda(call.Arguments[1]), call == _root);
-						}
-						break;
 					case nameof(Queryable.SingleOrDefault):
-						switch (call.Arguments.Count)
-						{
-							case 1: return BindSingleOrDefault(call.Arguments[0], null, call == _root);
-							case 2: return BindSingleOrDefault(call.Arguments[0], GetLambda(call.Arguments[1]), call == _root);
-						}
-						break;
+						return BindSingle(call);
 					case nameof(Queryable.Any):
-						switch (call.Arguments.Count)
-						{
-							case 1: return BindAny(call.Arguments[0], null, call == _root);
-							case 2: return BindAny(call.Arguments[0], GetLambda(call.Arguments[1]), call == _root);
-						}
-						break;
-					case nameof(Queryable.All) when call.Arguments.Count == 2:
-						return BindAll(call.Arguments[0], GetLambda(call.Arguments[1]), call == _root);
+						return BindAny(call);
+					case nameof(Queryable.All):
+						return BindAll(call);
 					case nameof(Queryable.Contains):
-						return BindContains(call.Arguments[0], call.Arguments[1], call == _root);
+						return BindContains(call);
 					case nameof(Queryable.Cast):
-						return BindCast(call.Arguments[0], call.Method.GetGenericArguments()[0]);
+						return BindCast(call);
 				}
 				throw new NotSupportedException($"The method ‘{mi.Name}’ is not supported");
 			}
 			return base.VisitMethodCall(call);
 		}
 
-		private Expression BindSelect(Expression source, LambdaExpression selector)
+		private Expression BindSelect(MethodCallExpression call)
 		{
+			Expression source = call.Arguments[0];
+			LambdaExpression selector = GetLambda(call.Arguments[1]);
+
 			ProjectionExpression projection = VisitSequence(source);
 			_map[selector.Parameters[0]] = projection.Projector;
-
-			Expression expression = Visit(selector.Body);
+			Expression select = Visit(selector.Body);
 			string alias = GetNewAlias();
-			ProjectedColumns pc = ProjectColumns(expression, alias, projection.Source.Alias);
+			ProjectedColumns pc = ProjectColumns(select, alias, projection.Source.Alias);
 			return new ProjectionExpression(
 				new SelectExpression(alias, pc.Columns, projection.Source),
 				pc.Projector
 			);
 		}
 
-		private Expression BindWhere(Expression source, LambdaExpression predicate)
+		private Expression BindWhere(MethodCallExpression call)
 		{
-			ProjectionExpression projection = VisitSequence(source);
-			_map[predicate.Parameters[0]] = projection.Projector;
+			Expression source = call.Arguments[0];
+			LambdaExpression predicate = GetLambda(call.Arguments[1]);
 
-			string alias = GetNewAlias();
+			ProjectionExpression projection = VisitSequence(source);
+			
+			_map[predicate.Parameters[0]] = projection.Projector;
 			Expression where = Visit(predicate.Body);
+			string alias = GetNewAlias();
 			ProjectedColumns pc = ProjectColumns(projection.Projector, alias, projection.Source.Alias);
 			return new ProjectionExpression(
 				new SelectExpression(alias, pc.Columns, projection.Source, where),
@@ -312,8 +259,14 @@ namespace SQLite.Net.Translation
 			);
 		}
 
-		private Expression BindJoin(Expression outerSource, Expression innerSource, LambdaExpression outerKey, LambdaExpression innerKey, LambdaExpression resultSelector)
+		private Expression BindJoin(MethodCallExpression call)
 		{
+			Expression outerSource = call.Arguments[0];
+			Expression innerSource = call.Arguments[1];
+			LambdaExpression outerKey = GetLambda(call.Arguments[2]);
+			LambdaExpression innerKey = GetLambda(call.Arguments[3]);
+			LambdaExpression resultSelector = GetLambda(call.Arguments[4]);
+
 			ProjectionExpression outerProjection = VisitSequence(outerSource);
 			ProjectionExpression innerProjection = VisitSequence(innerSource);
 
@@ -339,8 +292,12 @@ namespace SQLite.Net.Translation
 			);
 		}
 
-		private Expression BindSelectMany(Expression source, LambdaExpression collectionSelector, LambdaExpression resultSelector)
+		private Expression BindSelectMany(MethodCallExpression call)
 		{
+			Expression source = call.Arguments[0];
+			LambdaExpression collectionSelector = GetLambda(call.Arguments[1]);
+			LambdaExpression resultSelector = call.Arguments.Count == 3 ? GetLambda(call.Arguments[2]) : null;
+			
 			ProjectionExpression projection = VisitSequence(source);
 			_map[collectionSelector.Parameters[0]] = projection.Projector;
 
@@ -383,8 +340,14 @@ namespace SQLite.Net.Translation
 			);
 		}
 
-		private Expression BindGroupJoin(Expression outerSource, Expression innerSource, LambdaExpression outerKey, LambdaExpression innerKey, LambdaExpression resultSelector)
+		private Expression BindGroupJoin(MethodCallExpression call)
 		{
+			Expression outerSource = call.Arguments[0];
+			Expression innerSource = call.Arguments[1];
+			LambdaExpression outerKey = GetLambda(call.Arguments[2]);
+			LambdaExpression innerKey = GetLambda(call.Arguments[3]);
+			LambdaExpression resultSelector = GetLambda(call.Arguments[4]);
+
 			ProjectionExpression outerProjection = VisitSequence(outerSource);
 			ProjectionExpression innerProjection = VisitSequence(innerSource);
 
@@ -414,8 +377,33 @@ namespace SQLite.Net.Translation
 			);
 		}
 
-		private Expression BindGroupBy(Expression source, LambdaExpression keySelector, LambdaExpression elementSelector, LambdaExpression resultSelector)
+		private Expression BindGroupBy(MethodCallExpression call)
 		{
+			Expression source = call.Arguments[0];
+			LambdaExpression keySelector = GetLambda(call.Arguments[1]);
+			LambdaExpression elementSelector = null;
+			LambdaExpression resultSelector = null;
+
+			switch (call.Arguments.Count)
+			{
+				case 3:
+					LambdaExpression lambda2 = GetLambda(call.Arguments[2]);
+					switch (lambda2.Parameters.Count)
+					{
+						case 1: // second lambda is element selector
+							elementSelector = lambda2;
+							break;
+						case 2: // second lambda is result selector
+							resultSelector = lambda2;
+							break;
+					}
+					break;
+				case 4:
+					elementSelector = GetLambda(call.Arguments[2]);
+					resultSelector = GetLambda(call.Arguments[3]);
+					break;
+			}
+
 			ProjectionExpression projection = VisitSequence(source);
 
 			_map[keySelector.Parameters[0]] = projection.Projector;
@@ -482,8 +470,12 @@ namespace SQLite.Net.Translation
 			);
 		}
 
-		private Expression BindOrderBy(Expression source, LambdaExpression orderSelector, OrderType orderType)
+		private Expression BindOrderBy(MethodCallExpression call)
 		{
+			Expression source = call.Arguments[0];
+			LambdaExpression orderSelector = GetLambda(call.Arguments[1]);
+			OrderType orderType = call.Method.Name.EndsWith("Descending") ? OrderType.Descending : OrderType.Ascending;
+
 			List<OrderExpression> myThenBys = _thenBys;
 			_thenBys = null;
 			ProjectionExpression projection = VisitSequence(source);
@@ -514,17 +506,18 @@ namespace SQLite.Net.Translation
 			);
 		}
 
-		private Expression BindThenBy(Expression source, LambdaExpression orderSelector, OrderType orderType)
+		private Expression BindThenBy(MethodCallExpression call)
 		{
+			OrderType orderType = call.Method.Name.EndsWith("Descending") ? OrderType.Descending : OrderType.Ascending;
 			if (_thenBys == null)
 			{
 				_thenBys = new List<OrderExpression>();
 			}
-			_thenBys.Add(new OrderExpression(orderType, orderSelector));
-			return Visit(source);
+			_thenBys.Add(new OrderExpression(orderType, GetLambda(call.Arguments[1])));
+			return Visit(call.Arguments[0]);
 		}
 
-		private Expression BindAggregate(Expression source, MethodInfo method, LambdaExpression argument, bool isRoot)
+		private Expression BindAggregate(MethodCallExpression call)
 		{
 			bool HasPredicateArg(AggregateType aggregateType)
 			{
@@ -544,14 +537,17 @@ namespace SQLite.Net.Translation
 				}
 			}
 
-			Type returnType = method.ReturnType;
-			AggregateType aggType = GetAggregateType(method.Name);
+			Expression source = call.Arguments[0];
+			LambdaExpression argument = call.Arguments.Count == 2 ? GetLambda(call.Arguments[1]) : null;
+
+			Type returnType = call.Method.ReturnType;
+			AggregateType aggType = GetAggregateType(call.Method.Name);
 			bool hasPredicateArg = HasPredicateArg(aggType);
 
 			if (argument != null && hasPredicateArg)
 			{
 				// convert query.Count(predicate) into query.Where(predicate).Count()
-				source = Expression.Call(typeof(Queryable), nameof(Queryable.Where), method.GetGenericArguments(), source, argument);
+				source = Expression.Call(typeof(Queryable), nameof(Queryable.Where), call.Method.GetGenericArguments(), source, argument);
 				argument = null;
 			}
 
@@ -568,14 +564,12 @@ namespace SQLite.Net.Translation
 				argExpr = projection.Projector;
 			}
 
-			bool isDistinct = (projection.Source as SelectExpression)?.IsDistinct ?? false;
-
 			SelectExpression select = new SelectExpression(
 				GetNewAlias(),
-				new[] { new ColumnDeclaration("", new AggregateExpression(returnType, aggType, argExpr, isDistinct)) },
+				new[] { new ColumnDeclaration("", new AggregateExpression(returnType, aggType, argExpr)) },
 				projection.Source
 			);
-			if (isRoot)
+			if (call == _root)
 			{
 				return new ProjectionExpression(
 					select,
@@ -586,8 +580,10 @@ namespace SQLite.Net.Translation
 			return new ScalarExpression(returnType, select);
 		}
 
-		private Expression BindDistinct(Expression source)
+		private Expression BindDistinct(MethodCallExpression call)
 		{
+			Expression source = call.Arguments[0];
+			
 			ProjectionExpression projection = VisitSequence(source);
 			var alias = GetNewAlias();
 			ProjectedColumns pc = ProjectColumns(projection.Projector, alias, projection.Source.Alias);
@@ -597,31 +593,39 @@ namespace SQLite.Net.Translation
 			);
 		}
 
-		private Expression BindTake(Expression source, Expression take)
+		private Expression BindTake(MethodCallExpression call)
 		{
+			Expression source = call.Arguments[0];
+			Expression take = call.Arguments[1];
+
 			ProjectionExpression projection = VisitSequence(source);
-			take = Visit(take);
+			Expression visitedTake = Visit(take);
+			
 			var alias = GetNewAlias();
 			ProjectedColumns pc = ProjectColumns(projection.Projector, alias, projection.Source.Alias);
 			return new ProjectionExpression(
-				new SelectExpression(alias, pc.Columns, projection.Source, limit: take),
+				new SelectExpression(alias, pc.Columns, projection.Source, limit: visitedTake),
 				pc.Projector
 			);
 		}
 
-		private Expression BindSkip(Expression source, Expression skip)
+		private Expression BindSkip(MethodCallExpression call)
 		{
+			Expression source = call.Arguments[0];
+			Expression skip = call.Arguments[1];
+
 			ProjectionExpression projection = VisitSequence(source);
-			skip = Visit(skip);
+			Expression visitedSkip = Visit(skip);
+			
 			var alias = GetNewAlias();
 			ProjectedColumns pc = ProjectColumns(projection.Projector, alias, projection.Source.Alias);
 			return new ProjectionExpression(
-				new SelectExpression(alias, pc.Columns, projection.Source, offset: skip),
+				new SelectExpression(alias, pc.Columns, projection.Source, offset: visitedSkip),
 				pc.Projector
 			);
 		}
 
-		private Expression BindCast(Expression source, Type targetElementType)
+		private Expression BindCast(MethodCallExpression call)
 		{
 			Type GetTrueUnderlyingType(Expression expression)
 			{
@@ -632,6 +636,9 @@ namespace SQLite.Net.Translation
 				return expression.Type;
 			}
 
+			Expression source = call.Arguments[0];
+			Type targetElementType = call.Method.GetGenericArguments()[0];
+
 			ProjectionExpression projection = VisitSequence(source);
 			Type elementType = GetTrueUnderlyingType(projection.Projector);
 			if (!targetElementType.GetTypeInfo().IsAssignableFrom(elementType.GetTypeInfo()))
@@ -641,94 +648,78 @@ namespace SQLite.Net.Translation
 			return projection;
 		}
 
-		private Expression BindSingle(Expression source, LambdaExpression predicate, bool isRoot)
+		private Expression BindSingle(MethodCallExpression call)
 		{
-			if (predicate != null)
-			{
-				source = Expression.Call(
-					typeof(Enumerable), nameof(Enumerable.Where), new[] { predicate.Parameters[0].Type }, source, predicate
-				);
-			}
+			Expression source = call.Arguments[0];
+			LambdaExpression predicate = call.Arguments.Count == 2 ? GetLambda(call.Arguments[1]) : null;
 
 			ProjectionExpression projection = VisitSequence(source);
-			Type elementType = projection.Projector.Type;
-			if (isRoot)
-			{
-				return new ProjectionExpression(
-					projection.Source,
-					projection.Projector,
-					GetAggregator(elementType, nameof(Enumerable.Single))
-				);
-			}
-			else if (Orm.IsColumnTypeSupported(elementType))
-			{
-				return new ScalarExpression(elementType, projection.Source);
-			}
-			else
-			{
-				throw new ArgumentException("Cannot be converted to SQL.");
-			}
-		}
-
-		private Expression BindSingleOrDefault(Expression source, LambdaExpression predicate, bool isRoot)
-		{
+			
 			if (predicate != null)
 			{
-				source = Expression.Call(
-					typeof(Enumerable), nameof(Enumerable.Where), new[] { predicate.Parameters[0].Type }, source, predicate
-				);
-			}
-
-			ProjectionExpression projection = VisitSequence(source);
-			Type elementType = projection.Projector.Type;
-			if (isRoot)
-			{
-				return new ProjectionExpression(
-					projection.Source,
-					projection.Projector,
-					GetAggregator(elementType, nameof(Enumerable.SingleOrDefault))
-				);
-			}
-			else if (Orm.IsColumnTypeSupported(elementType))
-			{
-				return Expression.Coalesce(
-					new ScalarExpression(elementType, projection.Source),
-					Expression.Constant(GetDefaultValue(elementType))
+				_map[predicate.Parameters[0]] = projection.Projector;
+				Expression where = Visit(predicate.Body);
+				string alias = GetNewAlias();
+				ProjectedColumns pc = ProjectColumns(projection.Projector, alias, projection.Source.Alias);
+				return HandleAggregate(
+					call, new SelectExpression(alias, pc.Columns, projection.Source, where), pc.Projector
 				);
 			}
 			else
 			{
-				throw new ArgumentException("Cannot be converted to SQL.");
+				return HandleAggregate(call, projection.Source, projection.Projector);
 			}
 		}
 
-		private Expression BindFirst(Expression source, LambdaExpression predicate, bool isRoot)
+		private Expression BindFirst(MethodCallExpression call)
 		{
-			if (predicate != null) source = BindWhere(source, predicate);
-			return BindSingle(BindTake(source, Expression.Constant(1)), null, isRoot);
+			Expression source = call.Arguments[0];
+			LambdaExpression predicate = call.Arguments.Count == 2 ? GetLambda(call.Arguments[1]) : null;
+
+			ProjectionExpression projection = VisitSequence(source);
+			
+			Expression where = null;
+			if (predicate != null)
+			{
+				_map[predicate.Parameters[0]] = projection.Projector;
+				where = Visit(predicate.Body);
+			}
+
+			string alias = GetNewAlias();
+			ProjectedColumns pc = ProjectColumns(projection.Projector, alias, projection.Source.Alias);
+
+			return HandleAggregate(
+				call,
+				new SelectExpression(alias, pc.Columns, projection.Source, where, limit: Expression.Constant(1)),
+				pc.Projector
+			);
+		}
+		
+		private Expression BindElementAt(MethodCallExpression call)
+		{
+			Expression source = call.Arguments[0];
+			Expression index = call.Arguments[1];
+
+			ProjectionExpression projection = VisitSequence(source);
+			
+			string alias = GetNewAlias();
+			ProjectedColumns pc = ProjectColumns(projection.Projector, alias, projection.Source.Alias);
+
+			return HandleAggregate(
+				call,
+				new SelectExpression(alias, pc.Columns, projection.Source,
+					offset: Visit(index), limit: Expression.Constant(1)),
+				pc.Projector);
 		}
 
-		private Expression BindFirstOrDefault(Expression source, LambdaExpression predicate, bool isRoot)
+		private Expression BindAll(MethodCallExpression call)
 		{
-			if (predicate != null) source = BindWhere(source, predicate);
-			return BindSingleOrDefault(BindTake(source, Expression.Constant(1)), null, isRoot);
-		}
+			Expression source = call.Arguments[0];
+			LambdaExpression predicate = GetLambda(call.Arguments[1]);
 
-		private Expression BindElementAt(Expression source, Expression index, bool isRoot)
-		{
-			return BindFirst(BindSkip(source, index), null, isRoot);
-		}
-
-		private Expression BindElementAtOrDefault(Expression source, Expression index, bool isRoot)
-		{
-			return BindFirstOrDefault(BindSkip(source, index), null, isRoot);
-		}
-
-		private Expression BindAll(Expression source, LambdaExpression predicate, bool isRoot)
-		{
 			if (source is ConstantExpression constSource && !IsQuery(constSource))
 			{
-				Debug.Assert(!isRoot);
+				Debug.Assert(call != _root);
 				Expression where = ((IEnumerable)constSource.Value).Cast<object>()
 					.Select(value => Expression.Invoke(predicate, Expression.Constant(value, predicate.Parameters[0].Type)))
 					.Cast<Expression>()
@@ -743,7 +734,7 @@ namespace SQLite.Net.Translation
 				);
 				ProjectionExpression projection = VisitSequence(source);
 				Expression result = Expression.Not(new ExistsExpression(projection.Source));
-				if (isRoot)
+				if (call == _root)
 				{
 					string alias = GetNewAlias();
 					return new ProjectionExpression(
@@ -760,11 +751,14 @@ namespace SQLite.Net.Translation
 			}
 		}
 
-		private Expression BindAny(Expression source, LambdaExpression predicate, bool isRoot)
+		private Expression BindAny(MethodCallExpression call)
 		{
+			Expression source = call.Arguments[0];
+			LambdaExpression predicate = call.Arguments.Count == 2 ? GetLambda(call.Arguments[1]) : null;
+ 
 			if (source is ConstantExpression constSource && !IsQuery(constSource))
 			{
-				Debug.Assert(!isRoot);
+				Debug.Assert(call != _root);
 				Expression where = ((IEnumerable)constSource.Value).Cast<object>()
 					.Select(value => Expression.Invoke(predicate, Expression.Constant(value, predicate.Parameters[0].Type)))
 					.Cast<Expression>()
@@ -773,15 +767,21 @@ namespace SQLite.Net.Translation
 			}
 			else
 			{
+				ProjectionExpression projection = VisitSequence(source);
+				Expression result;
 				if (predicate != null)
 				{
-					source = Expression.Call(
-						typeof(Enumerable), nameof(Enumerable.Where), new[] { predicate.Parameters[0].Type }, source, predicate
-					);
+					_map[predicate.Parameters[0]] = projection.Projector;
+					Expression where = Visit(predicate.Body);
+					var pc = ProjectColumns(projection.Projector, null, projection.Source.Alias);
+					result = new ExistsExpression(new SelectExpression(null, pc.Columns, projection.Source, where));
 				}
-				ProjectionExpression projection = VisitSequence(source);
-				Expression result = new ExistsExpression(projection.Source);
-				if (isRoot)
+				else
+				{
+					result = new ExistsExpression(projection.Source);
+				}
+ 
+				if (call == _root)
 				{
 					string alias = GetNewAlias();
 					return new ProjectionExpression(
@@ -794,33 +794,41 @@ namespace SQLite.Net.Translation
 						GetAggregator<bool>(r => r.Single())
 					);
 				}
-				return result;
+				return result;	
 			}
 		}
 
-		private Expression BindContains(Expression source, Expression match, bool isRoot)
+		private Expression BindContains(MethodCallExpression call)
 		{
+			Expression source = call.Arguments[0];
+			Expression item = call.Arguments[1];
+
 			if (source is ConstantExpression constSource && !IsQuery(constSource))
 			{
-				Debug.Assert(!isRoot);
-				List<Expression> values = ((IEnumerable)constSource.Value).Cast<object>()
-					.Select(value => Expression.Constant(Convert.ChangeType(value, match.Type), match.Type))
-					.Cast<Expression>()
-					.ToList();
-				return new InExpression(Visit(match), values);
-			}
-			else if (isRoot)
-			{
-				var p = Expression.Parameter(TypeSystem.GetElementType(source.Type), "x");
-				var predicate = Expression.Lambda(Expression.Equal(p, match), p);
-				var exp = Expression.Call(typeof(Queryable), nameof(Queryable.Any), new[] { p.Type }, source, predicate);
-				_root = exp;
-				return Visit(exp);
+				Debug.Assert(call != _root);
+				IEnumerable<Expression> values = ((IEnumerable)constSource.Value).Cast<object>()
+					.Select(value => Expression.Constant(Convert.ChangeType(value, item.Type), item.Type));
+				return new InExpression(Visit(item), values);
 			}
 			else
 			{
 				ProjectionExpression projection = VisitSequence(source);
-				return new InExpression(Visit(match), projection.Source);
+				Expression result = new InExpression(Visit(item), projection.Source);
+				if (call == _root)
+				{
+					string alias = GetNewAlias();
+					return new ProjectionExpression(
+						new SelectExpression(
+							alias,
+							new[] { new ColumnDeclaration("value", result) },
+							null
+						),
+						new ColumnExpression(typeof(bool), alias, "value"),
+						GetAggregator<bool>(r => r.Single())
+					);
+				}
+
+				return result;
 			}
 		}
 
@@ -842,6 +850,25 @@ namespace SQLite.Net.Translation
 					throw new Exception($"The expression of type '{expr.Type}' is not a sequence");
 			}
 		}
+
+		private Expression HandleAggregate(MethodCallExpression call, QueryExpression query, Expression projector) 
+		{ 
+			Type elementType = call.Method.ReturnType; 
+			bool hasOrDefault = call.Method.Name.EndsWith("OrDefault"); 
+			if (call == _root) 
+			{ 
+				return new ProjectionExpression( 
+					query, projector, 
+					GetAggregator(elementType, hasOrDefault ? nameof(Enumerable.SingleOrDefault) : nameof(Enumerable.Single)) 
+				); 
+			} 
+			if (Orm.IsColumnTypeSupported(elementType)) 
+			{ 
+				if (!hasOrDefault) return new ScalarExpression(elementType, query); 
+				return Expression.Coalesce(new ScalarExpression(elementType, query), Expression.Default(elementType)); 
+			} 
+			throw new ArgumentException("Cannot be converted to SQL."); 
+		} 
 
 		private bool IsQuery(Expression expression)
 		{
