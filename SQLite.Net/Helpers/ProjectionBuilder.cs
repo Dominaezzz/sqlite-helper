@@ -25,8 +25,6 @@ namespace SQLite.Net.Helpers
 
 		public object GetValue(int index)
 		{
-			if (index < 0) throw new IndexOutOfRangeException();
-
 			return _query[index];
 		}
 

@@ -67,50 +67,42 @@ namespace SQLite.Net
 
 	    public string GetColumnName(int index)
 		{
+			CheckColumnIndex(index);
+
 			return raw.sqlite3_column_name(_stmt, index);
 	    }
 
 	    public int GetColumnType(int index)
-	    {
-		    return raw.sqlite3_column_type(_stmt, index);
+		{
+			CheckColumnIndex(index);
+
+			return raw.sqlite3_column_type(_stmt, index);
 	    }
 
 	    public int GetInt(int columnIndex)
-	    {
-		    if (columnIndex < 0 || columnIndex >= ColumnCount)
-		    {
-			    throw new IndexOutOfRangeException("Column Index " + columnIndex + " and Column Count " + ColumnCount);
-		    }
+		{
+			CheckColumnIndex(columnIndex);
 
-		    return raw.sqlite3_column_int(_stmt, columnIndex);
+			return raw.sqlite3_column_int(_stmt, columnIndex);
 	    }
 
 	    public double GetDouble(int columnIndex)
-	    {
-		    if (columnIndex < 0 || columnIndex >= ColumnCount)
-		    {
-			    throw new IndexOutOfRangeException("Column Index " + columnIndex + " and Column Count " + ColumnCount);
-		    }
+		{
+			CheckColumnIndex(columnIndex);
 
-		    return raw.sqlite3_column_double(_stmt, columnIndex);
+			return raw.sqlite3_column_double(_stmt, columnIndex);
 	    }
 
 	    public string GetText(int columnIndex)
-	    {
-		    if (columnIndex < 0 || columnIndex >= ColumnCount)
-		    {
-			    throw new IndexOutOfRangeException("Column Index " + columnIndex + " and Column Count " + ColumnCount);
-		    }
+		{
+			CheckColumnIndex(columnIndex);
 
-		    return raw.sqlite3_column_text(_stmt, columnIndex);
+			return raw.sqlite3_column_text(_stmt, columnIndex);
 	    }
 
 	    public byte[] GetBlob(int columnIndex)
-	    {
-		    if (columnIndex < 0 || columnIndex >= ColumnCount)
-		    {
-			    throw new IndexOutOfRangeException("Column Index " + columnIndex + " and Column Count " + ColumnCount);
-		    }
+		{
+			CheckColumnIndex(columnIndex);
 
 			byte[] result = raw.sqlite3_column_blob(_stmt, columnIndex);
 		    if (result == null && !IsNull(columnIndex))
@@ -121,63 +113,47 @@ namespace SQLite.Net
 	    }
 
 	    public long GetLong(int columnIndex)
-	    {
-		    if (columnIndex < 0 || columnIndex >= ColumnCount)
-		    {
-			    throw new IndexOutOfRangeException("Column Index " + columnIndex + " and Column Count " + ColumnCount);
-		    }
-
-		    return raw.sqlite3_column_int64(_stmt, columnIndex);
+		{
+			CheckColumnIndex(columnIndex);
+			return raw.sqlite3_column_int64(_stmt, columnIndex);
 	    }
 
 	    public bool IsNull(int columnIndex)
-	    {
-			if (columnIndex < 0 || columnIndex >= ColumnCount)
-		    {
-			    throw new IndexOutOfRangeException("Column Index " + columnIndex + " and Column Count " + ColumnCount);
-		    }
-
-		    return raw.sqlite3_column_type(_stmt, columnIndex) == raw.SQLITE_NULL;
+		{
+			CheckColumnIndex(columnIndex);
+			return raw.sqlite3_column_type(_stmt, columnIndex) == raw.SQLITE_NULL;
 		}
 
 	    public bool IsString(int columnIndex)
-	    {
-		    if (columnIndex < 0 || columnIndex >= ColumnCount)
-		    {
-			    throw new IndexOutOfRangeException("Column Index " + columnIndex + " and Column Count " + ColumnCount);
-		    }
-
-		    return raw.sqlite3_column_type(_stmt, columnIndex) == raw.SQLITE_TEXT;
+		{
+			CheckColumnIndex(columnIndex);
+			return raw.sqlite3_column_type(_stmt, columnIndex) == raw.SQLITE_TEXT;
 		}
 
 	    public bool IsInt(int columnIndex)
-	    {
-		    if (columnIndex < 0 || columnIndex >= ColumnCount)
-		    {
-			    throw new IndexOutOfRangeException("Column Index " + columnIndex + " and Column Count " + ColumnCount);
-		    }
-
-		    return raw.sqlite3_column_type(_stmt, columnIndex) == raw.SQLITE_INTEGER;
+		{
+			CheckColumnIndex(columnIndex);
+			return raw.sqlite3_column_type(_stmt, columnIndex) == raw.SQLITE_INTEGER;
 		}
 
 	    public bool IsFloat(int columnIndex)
-	    {
-		    if (columnIndex < 0 || columnIndex >= ColumnCount)
-		    {
-			    throw new IndexOutOfRangeException("Column Index " + columnIndex + " and Column Count " + ColumnCount);
-		    }
-
-		    return raw.sqlite3_column_type(_stmt, columnIndex) == raw.SQLITE_FLOAT;
+		{
+			CheckColumnIndex(columnIndex);
+			return raw.sqlite3_column_type(_stmt, columnIndex) == raw.SQLITE_FLOAT;
 		}
 
 	    public bool IsBlob(int columnIndex)
 	    {
-		    if (columnIndex < 0 || columnIndex >= ColumnCount)
-		    {
-			    throw new IndexOutOfRangeException("Column Index " + columnIndex + " and Column Count " + ColumnCount);
-		    }
-
+			CheckColumnIndex(columnIndex);
 		    return raw.sqlite3_column_type(_stmt, columnIndex) == raw.SQLITE_BLOB;
 	    }
+
+		private void CheckColumnIndex(int columnIndex)
+		{
+			if (columnIndex < 0 || columnIndex >= ColumnCount)
+			{
+				throw new IndexOutOfRangeException("Column Index " + columnIndex + " and Column Count " + ColumnCount);
+			}
+		}
 	}
 }
