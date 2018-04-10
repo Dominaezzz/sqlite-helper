@@ -71,6 +71,7 @@ namespace SQLite.Net
 
 		public static bool IsColumnTypeSupported(Type type)
 		{
+			type = Nullable.GetUnderlyingType(type) ?? type;
 			return AllTypes.Contains(type) || type.GetTypeInfo().IsEnum;
 		}
 
