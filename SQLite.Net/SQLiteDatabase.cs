@@ -349,7 +349,11 @@ namespace SQLite.Net
 		/// <summary>
 		/// Executes a query with the given text (SQL).
 		/// Place '?' in the sql text for each of the arguments.
-		/// It returns each row as a dynamic object mapping the columns to properties.
+		/// It returns each row as a <typeparamref name="T"/> object, mapping the columns to properties.
+		/// If <typeparamref name="T"/> is a simple type. i.e <see cref="int"/>, <see cref="DateTime"/>, <see cref="Guid"/>, etc.
+		/// then it returns the first column for each row.
+		/// If <typeparamref name="T"/> is a <see cref="ValueTuple"/> then the first N columns for each row are returned, where
+		/// N is the number of fields in the tuple.
 		/// <para>This is limited to public properties only, which have to match the columns returned from the query.</para>
 		/// </summary>
 		/// <typeparam name="T">The element type of the <see cref="IEnumerable{T}"/></typeparam>
@@ -364,6 +368,13 @@ namespace SQLite.Net
 				if (Orm.IsColumnTypeSupported(typeof(T)))
 				{
 					projExpr = new ColumnExpression(typeof(T), null, query.GetColumnName(0));
+				}
+				else if (Orm.IsValueTuple(typeof(T)))
+				{
+					ConstructorInfo constrInfo = typeof(T).GetTypeInfo()
+						.DeclaredConstructors.Single(c => c.GetParameters().Length != 0);
+					projExpr = Expression.New(constrInfo, constrInfo.GetParameters()
+						.Select((p, i) => new ColumnExpression(p.ParameterType, null, query.GetColumnName(i))));
 				}
 				else
 				{

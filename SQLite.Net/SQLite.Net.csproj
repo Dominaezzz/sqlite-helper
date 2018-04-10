@@ -32,7 +32,8 @@ Minor bug fixes.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="1.1.8" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="1.1.10" />
+    <PackageReference Include="System.ValueTuple" Version="4.4.0" />
   </ItemGroup>
 
   <ItemGroup>

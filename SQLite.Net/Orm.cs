@@ -69,6 +69,13 @@ namespace SQLite.Net
 			typeof(Guid)
 		};
 
+		public static readonly HashSet<Type> ValueTupleTypes = new HashSet<Type>
+		{
+			typeof(ValueTuple<>), typeof(ValueTuple<,>), typeof(ValueTuple<,,>),
+			typeof(ValueTuple<,,,>), typeof(ValueTuple<,,,,>), typeof(ValueTuple<,,,,,>),
+			typeof(ValueTuple<,,,,,>), typeof(ValueTuple<,,,,,,>), typeof(ValueTuple<,,,,,,,>),
+		};
+
 		public static bool IsColumnTypeSupported(Type type)
 		{
 			type = Nullable.GetUnderlyingType(type) ?? type;
@@ -117,6 +124,11 @@ namespace SQLite.Net
 			{
 				throw new ArgumentOutOfRangeException();
 			}
+		}
+
+		public static bool IsValueTuple(Type type)
+		{
+			return type.IsConstructedGenericType && ValueTupleTypes.Contains(type.GetGenericTypeDefinition());
 		}
 	}
 }
