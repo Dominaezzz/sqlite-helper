@@ -23,63 +23,51 @@ namespace Tests
 		[Fact]
 		[Trait("Category", "SubIteration")]
 	    public void TestGroupBy()
-	    {
-		    using (var query = _db.ExecuteQuery("SELECT AlbumId FROM Track GROUP BY AlbumId"))
-		    {
-			    var result = _db.Tracks.GroupBy(t => t.AlbumId);
-			    foreach (var item in result)
-			    {
-				    Assert.True(query.Step());
-				    int? expected = query.IsNull(0) ? (int?)null : query.GetInt(0);
-				    Assert.Equal(expected, item.Key);
+		{
+			var expectedResult = _db.Query<int?>("SELECT AlbumId FROM Track GROUP BY AlbumId");
+			var actualResult = _db.Tracks.GroupBy(t => t.AlbumId);
 
-				    using (var subQuery = _db.ExecuteQuery("SELECT TrackId FROM Track WHERE AlbumId IS ?", item.Key))
-					{
-						foreach (var subItem in item)
-						{
-							Assert.True(subQuery.Step());
-							Assert.Equal(subQuery.GetInt(0), subItem.TrackId);
-						}
-						Assert.False(subQuery.Step());
-					}
-			    }
-			    Assert.False(query.Step());
-		    }
+			foreach (var (expected, item) in expectedResult.Zip(actualResult, (e, a) => (e, a)))
+			{
+				Assert.Equal(expected, item.Key);
+
+				var expectedSubResult = _db.Query<int?>("SELECT TrackId FROM Track WHERE AlbumId IS ?", item.Key);
+				
+				foreach (var (subExpected, actual) in expectedSubResult.Zip(item, (e, a) => (e, a)))
+				{
+					Assert.Equal(subExpected, actual.TrackId);
+				}
+			}
 		}
 
 	    [Fact]
 	    [Trait("Category", "SubIteration")]
 		public void TestGroupByCompoundKey()
 	    {
-		    using (var query = _db.ExecuteQuery("SELECT MediaTypeId, UnitPrice FROM Track GROUP BY MediaTypeId, UnitPrice"))
-			{
-				var result = _db.Tracks.GroupBy(t => new { t.MediaTypeId, t.UnitPrice });
-			    foreach (var item in result)
-			    {
-					Assert.True(query.Step());
-				    Assert.Equal(query.GetInt(0), item.Key.MediaTypeId);
-				    Assert.Equal((decimal)query.GetDouble(1), item.Key.UnitPrice);
+			var querySQL = "SELECT MediaTypeId, UnitPrice FROM Track GROUP BY MediaTypeId, UnitPrice";
 
-				    const string subQuerySQL = "SELECT TrackId FROM Track WHERE MediaTypeId IS ? AND UnitPrice IS ?";
-					using (var subQuery = _db.ExecuteQuery(subQuerySQL, item.Key.MediaTypeId, item.Key.UnitPrice))
-					{
-						foreach (var subItem in item)
-						{
-							Assert.True(subQuery.Step());
-							Assert.Equal(subQuery.GetInt(0), subItem.TrackId);
-						}
-						Assert.False(subQuery.Step());
-					}
-			    }
-			    Assert.False(query.Step());
-		    }
+			var expected = _db.Query<(int MediaTypeId, decimal UnitPrice)>(querySQL);
+			var result = _db.Tracks.GroupBy(t => new { t.MediaTypeId, t.UnitPrice });
+
+			foreach (var (exp, item) in expected.Zip(result, (e, a) => (e, a)))
+			{
+				Assert.Equal(exp.MediaTypeId, item.Key.MediaTypeId);
+				Assert.Equal(exp.UnitPrice, item.Key.UnitPrice);
+
+				const string subQuerySQL = "SELECT TrackId FROM Track WHERE MediaTypeId IS ? AND UnitPrice IS ?";
+				var subExpected = _db.Query<int>(subQuerySQL, item.Key.MediaTypeId, item.Key.UnitPrice);
+				foreach (var (expectedTrackId, subItem) in subExpected.Zip(item, (e, a) => (e, a)))
+				{
+					Assert.Equal(expectedTrackId, subItem.TrackId);
+				}
+			}
 		}
 
 		[Fact]
 		[Trait("Category", "Aggregate")]
 		public void TestGroupByWithAggregate()
 		{
-			var expected = _db.Query("SELECT SUM(UnitPrice) AS _sum FROM Track GROUP BY AlbumId", row => row.Get<decimal>("_sum"));
+			var expected = _db.Query<decimal>("SELECT SUM(UnitPrice) FROM Track GROUP BY AlbumId");
 			var actual = _db.Tracks.GroupBy(t => t.AlbumId, (id, tracks) => tracks.Sum(t => t.UnitPrice));
 			
 			Assert.Equal(expected, actual);
@@ -108,7 +96,7 @@ namespace Tests
 	    [Fact]
 	    public void TestGroupByWithSelect()
 		{
-			var expected = _db.Query("SELECT AlbumId FROM Track GROUP BY AlbumId", row => row.Get<int?>("AlbumId"));
+			var expected = _db.Query<int?>("SELECT AlbumId FROM Track GROUP BY AlbumId");
 			var actual = _db.Tracks.GroupBy(t => t.AlbumId, (albumId, tracks) => albumId);
 			
 			Assert.Equal(expected, actual);
@@ -118,7 +106,7 @@ namespace Tests
 	    [Trait("Category", "Aggregate")]
 		public void TestGroupByThenSelectAggregate()
 		{
-			var expected = _db.Query("SELECT SUM(UnitPrice) AS _sum FROM Track GROUP BY AlbumId", row => row.Get<decimal>("_sum"));
+			var expected = _db.Query<decimal>("SELECT SUM(UnitPrice) FROM Track GROUP BY AlbumId");
 			var actual = _db.Tracks.GroupBy(t => t.AlbumId).Select(g => g.Sum(t => t.UnitPrice));
 		    
 			Assert.Equal(expected, actual);

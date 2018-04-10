@@ -104,25 +104,21 @@ namespace Tests
 				"FROM Artist " +
 				"JOIN Album ON Album.ArtistId IS Artist.ArtistId " +
 				"GROUP BY Artist.ArtistId";
-
-			using (var query = _db.ExecuteQuery(querySQL))
+				
+			var expected = _db.Query<int>(querySQL);
+			var result = _db.Artists.GroupJoin(_db.Albums, artist => artist.ArtistId, album => album.ArtistId, (artist, albums) => new
 			{
-				var result = _db.Artists.GroupJoin(_db.Albums, artist => artist.ArtistId, album => album.ArtistId, (artist, albums) => new
-				{
-					Artist = artist,
-					Albums = albums
-				});
-				foreach (var item in result)
-				{
-					Assert.True(query.Step());
-					Assert.Equal(query.GetInt(0), item.Artist.ArtistId);
+				Artist = artist,
+				Albums = albums
+			});
+			foreach (var (expectedArtistId, item) in expected.Zip(result, (e, r) => (e, r)))
+			{
+				Assert.Equal(expectedArtistId, item.Artist.ArtistId);
 
-					var subExpected = _db.Query($"SELECT AlbumId FROM Album WHERE ArtistId IS {item.Artist.ArtistId}", row => row.Get<int>("AlbumId"));
-					var subActual = item.Albums.Select(a => a.AlbumId);
-					
-					Assert.Equal(subExpected, subActual);
-				}
-				Assert.False(query.Step());
+				var subExpected = _db.Query<int>("SELECT AlbumId FROM Album WHERE ArtistId IS ?", item.Artist.ArtistId);
+				var subActual = item.Albums.Select(a => a.AlbumId);
+
+				Assert.Equal(subExpected, subActual);
 			}
 		}
 
