@@ -9,79 +9,6 @@ using SQLite.Net.Expressions;
 
 namespace SQLite.Net.Helpers
 {
-	/// <summary>
-	/// A ProjectionRow is an abstract over a row based data source
-	/// </summary>
-	internal class ProjectionRow
-	{
-		private readonly SQLiteQueryProvider _provider;
-		private readonly SQLiteQuery _query;
-
-		public ProjectionRow(SQLiteQueryProvider provider, SQLiteQuery query)
-		{
-			_provider = provider;
-			_query = query;
-		}
-
-		public object GetValue(int index)
-		{
-			return _query[index];
-		}
-
-		public long GetLong(int index)
-		{
-			return _query.GetLong(index);
-		}
-
-		public int GetInt(int index)
-		{
-			return _query.GetInt(index);
-		}
-
-		public double GetDouble(int index)
-		{
-			return _query.GetDouble(index);
-		}
-
-		public string GetText(int index)
-		{
-			return _query.GetText(index);
-		}
-
-		public byte[] GetBlob(int index)
-		{
-			return _query.GetBlob(index);
-		}
-
-		public bool IsNull(int index)
-		{
-			return _query.IsNull(index);
-		}
-
-		public IEnumerable<T> ExecuteSubQuery<T>(LambdaExpression query)
-		{
-			ProjectionExpression projection = (ProjectionExpression)new Replacer()
-				.Replace(query.Body, query.Parameters[0], Expression.Constant(this, typeof(ProjectionRow)));
-
-			projection = (ProjectionExpression)Evaluator.PartialEval(projection, CanEvaluateLocally);
-
-			IEnumerable<T> result = _provider.ExecuteQuery<T>(projection);
-
-			if (typeof(IQueryable<T>).GetTypeInfo().IsAssignableFrom(query.Body.Type.GetTypeInfo()))
-			{
-				return result.AsQueryable();
-			}
-			return result;
-		}
-
-		private static bool CanEvaluateLocally(Expression expression)
-		{
-			return expression.NodeType != ExpressionType.Parameter &&
-				   !((int)expression.NodeType >= 1000) &&
-				   expression.NodeType != ExpressionType.New;
-		}
-	}
-
 	internal class Replacer : DbExpressionVisitor
 	{
 		private Expression _searchFor, _replaceWith;
@@ -108,15 +35,16 @@ namespace SQLite.Net.Helpers
 	/// </summary>
 	internal class ProjectionBuilder : DbExpressionVisitor
 	{
-		private static readonly MethodInfo MiGetValue = typeof(ProjectionRow).GetRuntimeMethod(nameof(ProjectionRow.GetValue), new []{ typeof(int) });
-		private static readonly MethodInfo MiGetLong = typeof(ProjectionRow).GetRuntimeMethod(nameof(ProjectionRow.GetLong), new[] { typeof(int) });
-		private static readonly MethodInfo MiGetInt = typeof(ProjectionRow).GetRuntimeMethod(nameof(ProjectionRow.GetInt), new[] { typeof(int) });
-		private static readonly MethodInfo MiGetDouble = typeof(ProjectionRow).GetRuntimeMethod(nameof(ProjectionRow.GetDouble), new[] { typeof(int) });
-		private static readonly MethodInfo MiGetText = typeof(ProjectionRow).GetRuntimeMethod(nameof(ProjectionRow.GetText), new[] { typeof(int) });
-		private static readonly MethodInfo MiGetBlob = typeof(ProjectionRow).GetRuntimeMethod(nameof(ProjectionRow.GetBlob), new[] { typeof(int) });
-		private static readonly MethodInfo MiIsNull = typeof(ProjectionRow).GetRuntimeMethod(nameof(ProjectionRow.IsNull), new[] { typeof(int) });
-		private static readonly MethodInfo MiExecuteSubQuery = typeof(ProjectionRow).GetRuntimeMethod(nameof(ProjectionRow.ExecuteSubQuery), new []{ typeof(LambdaExpression) });
-		private readonly ParameterExpression _row = Expression.Parameter(typeof(ProjectionRow), "row");
+		private static readonly MethodInfo MiGetValue = typeof(SQLiteQuery).GetRuntimeMethod(nameof(SQLiteQuery.GetValue), new []{ typeof(int) });
+		private static readonly MethodInfo MiGetLong = typeof(SQLiteQuery).GetRuntimeMethod(nameof(SQLiteQuery.GetLong), new[] { typeof(int) });
+		private static readonly MethodInfo MiGetInt = typeof(SQLiteQuery).GetRuntimeMethod(nameof(SQLiteQuery.GetInt), new[] { typeof(int) });
+		private static readonly MethodInfo MiGetDouble = typeof(SQLiteQuery).GetRuntimeMethod(nameof(SQLiteQuery.GetDouble), new[] { typeof(int) });
+		private static readonly MethodInfo MiGetText = typeof(SQLiteQuery).GetRuntimeMethod(nameof(SQLiteQuery.GetText), new[] { typeof(int) });
+		private static readonly MethodInfo MiGetBlob = typeof(SQLiteQuery).GetRuntimeMethod(nameof(SQLiteQuery.GetBlob), new[] { typeof(int) });
+		private static readonly MethodInfo MiIsNull = typeof(SQLiteQuery).GetRuntimeMethod(nameof(SQLiteQuery.IsNull), new[] { typeof(int) });
+		private static readonly MethodInfo MiExecuteSubQuery = typeof(ProjectionBuilder).GetRuntimeMethod(nameof(ExecuteSubQuery), new []{ typeof(SQLiteQueryProvider), typeof(SQLiteQuery), typeof(LambdaExpression) });
+		private readonly ParameterExpression _row = Expression.Parameter(typeof(SQLiteQuery), "row");
+		private readonly ParameterExpression _provider = Expression.Parameter(typeof(SQLiteQueryProvider), "_provider");
 		private readonly string _rowAlias;
 		private readonly Func<string, int> _getColumnIndex;
 
@@ -129,8 +57,7 @@ namespace SQLite.Net.Helpers
 		internal static LambdaExpression Build(Expression expression, string alias, Func<string, int> getColumnIndex)
 		{
 			ProjectionBuilder builder = new ProjectionBuilder(alias, getColumnIndex);
-			Expression body = builder.Visit(expression);
-			return Expression.Lambda(body, builder._row);
+			return Expression.Lambda(builder.Visit(expression), builder._provider, builder._row);
 		}
 
 		protected override Expression VisitColumn(ColumnExpression column)
@@ -247,13 +174,38 @@ namespace SQLite.Net.Helpers
 
 		protected override Expression VisitProjection(ProjectionExpression proj)
 		{
-			LambdaExpression subQuery = Expression.Lambda(base.VisitProjection(proj), _row);
+			LambdaExpression subQuery = Expression.Lambda(base.VisitProjection(proj), _provider, _row);
 			Type elementType = TypeSystem.GetElementType(subQuery.Body.Type);
 			MethodInfo mi = MiExecuteSubQuery.MakeGenericMethod(elementType);
 			return Expression.Convert(
-				Expression.Call(_row, mi, Expression.Constant(subQuery)),
+				Expression.Call(mi, _provider, _row, Expression.Constant(subQuery)),
 				proj.Type
 			);
+		}
+
+		public static IEnumerable<T> ExecuteSubQuery<T>(SQLiteQueryProvider provider, SQLiteQuery row, LambdaExpression query)
+		{
+			ProjectionExpression projection = (ProjectionExpression)new Replacer()
+				.Replace(query.Body, query.Parameters[0], Expression.Constant(provider, typeof(SQLiteQueryProvider)));
+			projection = (ProjectionExpression)new Replacer()
+				.Replace(projection, query.Parameters[1], Expression.Constant(row, typeof(SQLiteQuery)));
+
+			projection = (ProjectionExpression)Evaluator.PartialEval(projection, CanEvaluateLocally);
+
+			IEnumerable<T> result = provider.ExecuteQuery<T>(projection);
+
+			if (typeof(IQueryable<T>).GetTypeInfo().IsAssignableFrom(query.Body.Type.GetTypeInfo()))
+			{
+				return result.AsQueryable();
+			}
+			return result;
+		}
+
+		private static bool CanEvaluateLocally(Expression expression)
+		{
+			return expression.NodeType != ExpressionType.Parameter &&
+				   !((int)expression.NodeType >= 1000) &&
+				   expression.NodeType != ExpressionType.New;
 		}
 	}
 }

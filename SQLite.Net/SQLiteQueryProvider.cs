@@ -113,13 +113,11 @@ namespace SQLite.Net
 					name => string.IsNullOrEmpty(name) ? 0 : query.GetColumnIndex(name)
 				);
 				
-				Func<ProjectionRow, T> projector = (Func<ProjectionRow, T>)projectorExpr.Compile();
-				ProjectionRow projectionRow = new ProjectionRow(this, query);
+				var projector = (Func<SQLiteQueryProvider, SQLiteQuery, T>)projectorExpr.Compile();
 
 				while (query.Step())
 				{
-					T current = projector(projectionRow);
-					yield return current;
+					yield return projector(this, query);
 				}
 			}
 		}

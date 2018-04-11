@@ -32,27 +32,7 @@ namespace SQLite.Net
 			}
 		}
 
-	    public object this[int columnIndex]
-	    {
-		    get
-		    {
-				switch (GetColumnType(columnIndex))
-				{
-					case raw.SQLITE_INTEGER:
-						return GetLong(columnIndex);
-					case raw.SQLITE_FLOAT:
-						return GetDouble(columnIndex);
-					case raw.SQLITE_TEXT:
-						return GetText(columnIndex);
-					case raw.SQLITE_BLOB:
-						return GetBlob(columnIndex);
-					case raw.SQLITE_NULL:
-						return null;
-					default:
-						return null;
-				}
-			}
-		}
+		public object this[int columnIndex] => GetValue(columnIndex);
 		public object this[string column] => this[GetColumnIndex(column)];
 
 	    public bool HasColumn(string name)
@@ -78,6 +58,25 @@ namespace SQLite.Net
 
 			return raw.sqlite3_column_type(_stmt, index);
 	    }
+
+		public object GetValue(int columnIndex)
+		{
+			switch (GetColumnType(columnIndex))
+			{
+				case raw.SQLITE_INTEGER:
+					return GetLong(columnIndex);
+				case raw.SQLITE_FLOAT:
+					return GetDouble(columnIndex);
+				case raw.SQLITE_TEXT:
+					return GetText(columnIndex);
+				case raw.SQLITE_BLOB:
+					return GetBlob(columnIndex);
+				case raw.SQLITE_NULL:
+					return null;
+				default:
+					return null;
+			}
+		}
 
 	    public int GetInt(int columnIndex)
 		{

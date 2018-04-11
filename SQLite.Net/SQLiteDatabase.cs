@@ -300,8 +300,8 @@ namespace SQLite.Net
 				{
 					var projExpr = new ColumnExpression(typeof(T), null, query.GetColumnName(0));
 					var projectionExpr = ProjectionBuilder.Build(projExpr, null, s => query.GetColumnIndex(s));
-					var projector = (Func<ProjectionRow, T>)projectionExpr.Compile();
-					return projector(new ProjectionRow(_provider, query));
+					var projector = (Func<SQLiteQueryProvider, SQLiteQuery, T>)projectionExpr.Compile();
+					return projector(_provider, query);
 				}
 			    return default(T);
 		    }
@@ -393,12 +393,11 @@ namespace SQLite.Net
 				}
 
 				var projectionExpr = ProjectionBuilder.Build(projExpr, null, s => query.GetColumnIndex(s));
-				var projector = (Func<ProjectionRow, T>) projectionExpr.Compile();
-				ProjectionRow projectionRow = new ProjectionRow(_provider, query);
+				var projector = (Func<SQLiteQueryProvider, SQLiteQuery, T>) projectionExpr.Compile();
 
 				while (query.Step())
 				{
-					yield return projector(projectionRow);
+					yield return projector(_provider, query);
 				}
 		    }
 	    }
