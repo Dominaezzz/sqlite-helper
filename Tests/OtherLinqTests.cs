@@ -17,15 +17,15 @@ namespace Tests
 			    db.DataTable.Insert(new Data<string> { Value = "Random Text" });
 
 			    var result = db.DataTable.Single();
-				Assert.Equal(result.Id, 1);
-				Assert.Equal(result.Value, "Random Text");
+				Assert.Equal(1, result.Id);
+				Assert.Equal("Random Text", result.Value);
 
 			    db.DataTable.Insert(new Data<string> { Value = "Random Text 2" });
 			    Assert.Throws<InvalidOperationException>(() => db.DataTable.Single());
 
 			    result = db.DataTable.Single(d => d.Id == 2);
-			    Assert.Equal(result.Id, 2);
-			    Assert.Equal(result.Value, "Random Text 2");
+			    Assert.Equal(2, result.Id);
+			    Assert.Equal("Random Text 2", result.Value);
 
 			    Assert.Throws<InvalidOperationException>(() => db.DataTable.Single(d => d.Id == 3));
 			}
@@ -42,16 +42,16 @@ namespace Tests
 
 			    var result = db.DataTable.SingleOrDefault();
 				Assert.NotNull(result);
-			    Assert.Equal(result.Id, 1);
-			    Assert.Equal(result.Value, "Random Text");
+			    Assert.Equal(1, result.Id);
+			    Assert.Equal("Random Text", result.Value);
 
 			    db.DataTable.Insert(new Data<string>() { Value = "Random Text 2" });
 			    Assert.Throws<InvalidOperationException>(() => db.DataTable.SingleOrDefault());
 
 			    result = db.DataTable.SingleOrDefault(d => d.Id == 2);
 				Assert.NotNull(result);
-			    Assert.Equal(result.Id, 2);
-			    Assert.Equal(result.Value, "Random Text 2");
+			    Assert.Equal(2, result.Id);
+			    Assert.Equal("Random Text 2", result.Value);
 
 			    Assert.Null(db.DataTable.SingleOrDefault(d => d.Id == 3));
 			}
@@ -68,12 +68,12 @@ namespace Tests
 			    db.DataTable.Insert(new Data<string>() { Value = "Random Text 2" });
 
 			    var result = db.DataTable.First();
-			    Assert.Equal(result.Id, 1);
-			    Assert.Equal(result.Value, "Random Text");
+			    Assert.Equal(1, result.Id);
+			    Assert.Equal("Random Text", result.Value);
 				
 				result = db.DataTable.First(d => d.Id == 2);
-			    Assert.Equal(result.Id, 2);
-			    Assert.Equal(result.Value, "Random Text 2");
+			    Assert.Equal(2, result.Id);
+			    Assert.Equal("Random Text 2", result.Value);
 
 			    Assert.Throws<InvalidOperationException>(() => db.DataTable.First(d => d.Id == 3));
 			}
@@ -91,13 +91,13 @@ namespace Tests
 
 			    var result = db.DataTable.FirstOrDefault();
 				Assert.NotNull(result);
-			    Assert.Equal(result.Id, 1);
-			    Assert.Equal(result.Value, "Random Text");
+			    Assert.Equal(1, result.Id);
+			    Assert.Equal("Random Text", result.Value);
 				
 			    result = db.DataTable.FirstOrDefault(d => d.Id == 2);
 				Assert.NotNull(result);
-			    Assert.Equal(result.Id, 2);
-			    Assert.Equal(result.Value, "Random Text 2");
+			    Assert.Equal(2, result.Id);
+			    Assert.Equal("Random Text 2", result.Value);
 
 			    Assert.Null(db.DataTable.FirstOrDefault(d => d.Id == 3));
 			}
@@ -114,12 +114,12 @@ namespace Tests
 			    db.DataTable.Insert(new Data<string>() { Value = "Random Text 2" });
 
 			    var result = db.DataTable.Last();
-			    Assert.Equal(result.Id, 2);
-			    Assert.Equal(result.Value, "Random Text 2");
+			    Assert.Equal(2, result.Id);
+			    Assert.Equal("Random Text 2", result.Value);
 				
 			    result = db.DataTable.Last(d => d.Id < 2);
-			    Assert.Equal(result.Id, 1);
-			    Assert.Equal(result.Value, "Random Text");
+			    Assert.Equal(1, result.Id);
+			    Assert.Equal("Random Text", result.Value);
 
 			    Assert.Throws<InvalidOperationException>(() => db.DataTable.Last(d => d.Id == 3));
 		    }
@@ -137,13 +137,13 @@ namespace Tests
 
 			    var result = db.DataTable.LastOrDefault();
 				Assert.NotNull(result);
-			    Assert.Equal(result.Id, 2);
-			    Assert.Equal(result.Value, "Random Text 2");
+			    Assert.Equal(2, result.Id);
+			    Assert.Equal("Random Text 2", result.Value);
 
 			    result = db.DataTable.LastOrDefault(d => d.Id < 2);
 				Assert.NotNull(result);
-			    Assert.Equal(result.Id, 1);
-			    Assert.Equal(result.Value, "Random Text");
+			    Assert.Equal(1, result.Id);
+			    Assert.Equal("Random Text", result.Value);
 
 			    Assert.Null(db.DataTable.LastOrDefault(d => d.Id == 3));
 		    }
@@ -160,12 +160,12 @@ namespace Tests
 			    db.DataTable.Insert(new Data<string>() { Value = "Random Text 2" });
 
 			    var result = db.DataTable.ElementAt(1);
-			    Assert.Equal(result.Id, 2);
-			    Assert.Equal(result.Value, "Random Text 2");
+			    Assert.Equal(2, result.Id);
+			    Assert.Equal("Random Text 2", result.Value);
 
 			    result = db.DataTable.ElementAt(0);
-			    Assert.Equal(result.Id, 1);
-			    Assert.Equal(result.Value, "Random Text");
+			    Assert.Equal(1, result.Id);
+			    Assert.Equal("Random Text", result.Value);
 
 			    Assert.Throws<InvalidOperationException>(() => db.DataTable.ElementAt(3));
 		    }
@@ -183,13 +183,13 @@ namespace Tests
 
 			    var result = db.DataTable.ElementAtOrDefault(1);
 				Assert.NotNull(result);
-			    Assert.Equal(result.Id, 2);
-			    Assert.Equal(result.Value, "Random Text 2");
+			    Assert.Equal(2, result.Id);
+			    Assert.Equal("Random Text 2", result.Value);
 
 			    result = db.DataTable.ElementAtOrDefault(0);
 				Assert.NotNull(result);
-			    Assert.Equal(result.Id, 1);
-			    Assert.Equal(result.Value, "Random Text");
+			    Assert.Equal(1, result.Id);
+			    Assert.Equal("Random Text", result.Value);
 
 			    Assert.Null(db.DataTable.ElementAtOrDefault(3));
 		    }
