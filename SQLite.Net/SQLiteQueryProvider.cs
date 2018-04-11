@@ -107,23 +107,11 @@ namespace SQLite.Net
 
 			using (SQLiteQuery query = Database.ExecuteQuery(sql, args.ToArray()))
 			{
-				LambdaExpression projectorExpr;
-				if (projection.Source is SelectExpression select)
-				{
-					ProjectedColumns pc = ColumnProjector.ProjectColumns(projection.Projector, select.Alias, new[] {select.Alias});
-					List<string> columns = pc.Columns.Select(c => c.Name).ToList();
-					projectorExpr = ProjectionBuilder.Build(
-						projection.Projector, projection.Source.Alias, name => columns.IndexOf(name)
-					);
-				}
-				else
-				{
-					projectorExpr = ProjectionBuilder.Build(
-						projection.Projector,
-						projection.Source.Alias,
-						name => string.IsNullOrEmpty(name) ? 0 : query.GetColumnIndex(name)
-					);
-				}
+				LambdaExpression projectorExpr = ProjectionBuilder.Build(
+					projection.Projector,
+					projection.Source.Alias,
+					name => string.IsNullOrEmpty(name) ? 0 : query.GetColumnIndex(name)
+				);
 				
 				Func<ProjectionRow, T> projector = (Func<ProjectionRow, T>)projectorExpr.Compile();
 				ProjectionRow projectionRow = new ProjectionRow(this, query);
