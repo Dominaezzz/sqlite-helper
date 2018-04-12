@@ -51,7 +51,7 @@ namespace Tests
 		[Fact]
 		public void TestTrimStart()
 		{
-			Assert.Equal(TestString.TrimStart(), _db.DataTable.Select(d => d.Value.TrimEnd()).Single());
+			Assert.Equal(TestString.TrimStart(), _db.DataTable.Select(d => d.Value.TrimStart()).Single());
 		}
 
 		[Fact]
