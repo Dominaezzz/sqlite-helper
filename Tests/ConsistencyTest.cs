@@ -187,13 +187,13 @@ namespace Tests
 		    SimpleTest<RegularEnum>(RegularEnum.Value1);
 		    SimpleTest<RegularEnum>(RegularEnum.Value2);
 		    SimpleTest<RegularEnum>(RegularEnum.Value3);
-		    SimpleTest<RegularEnum?>(RegularEnum.Value3);
+		    SimpleTest<RegularEnum?>(RegularEnum.Value2);
 		    SimpleTest<RegularEnum?>(null);
 
 		    SimpleTest<IrregularEnum>(IrregularEnum.Value1);
 		    SimpleTest<IrregularEnum>(IrregularEnum.Value2);
 		    SimpleTest<IrregularEnum>(IrregularEnum.Value3);
-		    SimpleTest<IrregularEnum?>(IrregularEnum.Value3);
+		    SimpleTest<IrregularEnum?>(IrregularEnum.Value2);
 		    SimpleTest<IrregularEnum?>(null);
 
 		    SimpleTest<TextEnum>(TextEnum.Table);
