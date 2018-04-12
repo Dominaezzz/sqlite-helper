@@ -31,7 +31,7 @@ namespace Tests
 			{
 				Assert.Equal(expected, item.Key);
 
-				var expectedSubResult = _db.Query<int?>("SELECT TrackId FROM Track WHERE AlbumId IS ?", item.Key);
+				var expectedSubResult = _db.Query<int>("SELECT TrackId FROM Track WHERE AlbumId IS ?", item.Key);
 				
 				foreach (var (subExpected, actual) in expectedSubResult.Zip(item, (e, a) => (e, a)))
 				{
