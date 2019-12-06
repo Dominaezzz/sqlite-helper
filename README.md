@@ -1,4 +1,7 @@
 # SQLite-helper
+
+[![](https://github.com/Dominaezzz/sqlite-helper/workflows/Build/badge.svg)](https://github.com/Dominaezzz/sqlite-helper/actions)
+
 An SQLite ORM and client for .NET applications.
 
 SQLite-helper is an open source library built using .NETStandard to be cross-platform.
