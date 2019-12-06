@@ -537,7 +537,7 @@ namespace SQLite.Net
 				    sb.Append(constraint).AppendLine(", ");
 			    }
 
-			    sb.Remove(sb.Length - 4, 4).AppendLine();
+			    sb.Remove(sb.Length - 3, 3).AppendLine();
 		    }
 		    sb.Append(");").AppendLine();
 
@@ -675,7 +675,7 @@ namespace SQLite.Net
 					sb.Append(constraint).AppendLine(", ");
 				}
 
-				sb.Remove(sb.Length - 4, 4).AppendLine();
+				sb.Remove(sb.Length - 3, 3).AppendLine();
 			}
 			sb.Append(");").AppendLine();
 
